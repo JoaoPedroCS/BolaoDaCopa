@@ -1,29 +1,58 @@
 #!/usr/bin/env node
 /**
- * Atualiza data/matches.json com os jogos da fase de grupos da Copa 2026.
+ * Atualiza matches.json com os placares/status reais da fase de grupos da Copa 2026.
  * Fonte: football-data.org (gratis). Defina a env FOOTBALL_DATA_TOKEN.
  *
- * Uso local:  FOOTBALL_DATA_TOKEN=xxxx node scripts/update-results.mjs
+ * Uso local:  FOOTBALL_DATA_TOKEN=xxxx node update-results.mjs
  * No GitHub Actions o token vem do secret FOOTBALL_DATA_TOKEN.
+ *
+ * IMPORTANTE: este arquivo ja vem com os 72 jogos e IDs ESTAVEIS (wc-001..wc-072).
+ * Os palpites em predictions.json sao indexados por esses IDs. Por isso o script
+ * NAO recria os IDs a partir da API: ele CASA cada jogo da API com a entrada
+ * existente (por data/hora + times) e PRESERVA o id, o grupo e a rodada locais,
+ * atualizando apenas placar, status, nomes e escudos. Assim os palpites nunca
+ * perdem o vinculo com o jogo.
  *
  * Requer Node 18+ (fetch nativo). Sem dependencias externas.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 
 const TOKEN = process.env.FOOTBALL_DATA_TOKEN;
-const OUT = new URL("../data/matches.json", import.meta.url);
+const OUT = new URL("./matches.json", import.meta.url);
 const API = "https://api.football-data.org/v4/competitions/WC/matches?stage=GROUP_STAGE";
 
 function mapStatus(s) {
-  // football-data: SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, SUSPENDED, POSTPONED, CANCELLED, AWARDED
   if (s === "FINISHED" || s === "AWARDED") return "FINISHED";
   if (s === "IN_PLAY" || s === "PAUSED") return "IN_PLAY";
   return "TIMED";
 }
-
 function groupLetter(g) {
   if (!g) return "?";
   return String(g).replace(/^GROUP[_\s]*/i, "").trim().toUpperCase();
+}
+
+// Normaliza nome de time: minusculo, sem acento, so letras, + apelidos comuns.
+function norm(name) {
+  let s = String(name || "").toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z]/g, "");
+  const alias = {
+    southkorea: "korearepublic", republicofkorea: "korearepublic",
+    usa: "unitedstates", unitedstatesofamerica: "unitedstates",
+    turkiye: "turkey",
+    cotedivoire: "ivorycoast",
+    czechrepublic: "czechia",
+    congodr: "drcongo", democraticrepublicofthecongo: "drcongo", democraticrepublicofcongo: "drcongo",
+    caboverde: "capeverde",
+    bosniaherzegovina: "bosniaandherzegovina", bosnia: "bosniaandherzegovina",
+  };
+  return alias[s] || s;
+}
+const teamSet = (m) => new Set([norm(m.home), norm(m.away)]);
+function overlap(a, b) {
+  let n = 0;
+  for (const x of a) if (b.has(x)) n++;
+  return n;
 }
 
 async function main() {
@@ -32,6 +61,10 @@ async function main() {
     process.exit(1);
   }
 
+  let prevPayload = null;
+  try { prevPayload = JSON.parse(readFileSync(OUT, "utf8")); } catch {}
+  const existing = (prevPayload && prevPayload.matches) || [];
+
   const res = await fetch(API, { headers: { "X-Auth-Token": TOKEN } });
   if (!res.ok) {
     console.error(`API respondeu ${res.status}: ${await res.text()}`);
@@ -39,45 +72,47 @@ async function main() {
   }
   const data = await res.json();
   const raw = data.matches || [];
+  if (!raw.length) {
+    console.error("A API nao retornou jogos. Mantendo arquivo atual.");
+    process.exit(0);
+  }
 
-  // Rodada (1/2/3): usa matchday quando disponível; senão deriva por ordem
-  // cronológica dentro de cada grupo (2 jogos por rodada num grupo de 4).
-  const mdays = raw.map((m) => m.matchday).filter((x) => Number.isInteger(x));
-  const hasMatchday = mdays.length === raw.length && mdays.length > 0;
-  const minMd = hasMatchday ? Math.min(...mdays) : 1;
-  const roundFallback = {};
-  if (!hasMatchday) {
-    const byGroup = {};
-    for (const m of raw) (byGroup[m.group || "?"] ||= []).push(m);
-    for (const g of Object.values(byGroup)) {
-      g.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-      g.forEach((m, i) => { roundFallback[m.id] = Math.floor(i / 2) + 1; });
+  const used = new Set();
+  function findStable(apiMatch) {
+    const t = new Date(apiMatch.utcDate).getTime();
+    const ntok = teamSet({ home: apiMatch.homeTeam?.name, away: apiMatch.awayTeam?.name });
+    let best = null, bestScore = -1;
+    for (const e of existing) {
+      if (used.has(e.id)) continue;
+      const dtMin = Math.abs(new Date(e.utcDate).getTime() - t) / 60000;
+      if (dtMin > 180) continue;
+      const ov = overlap(ntok, teamSet(e));
+      const score = ov * 1000 - dtMin;
+      if (score > bestScore) { bestScore = score; best = e; }
     }
+    if (best) used.add(best.id);
+    return best;
   }
 
   const matches = raw.map((m) => {
     const ft = m.score?.fullTime || {};
-    const round = hasMatchday ? (m.matchday - minMd + 1) : (roundFallback[m.id] || 1);
+    const stable = findStable(m);
+    const group = stable ? stable.group : groupLetter(m.group);
+    const round = stable ? stable.round : (Number.isInteger(m.matchday) ? m.matchday : 1);
     return {
-      id: "wc-" + m.id,
-      group: groupLetter(m.group),
+      id: stable ? stable.id : "wc-" + m.id,
+      group,
       round,
       utcDate: m.utcDate,
-      home: m.homeTeam?.name ?? "A definir",
-      away: m.awayTeam?.name ?? "A definir",
-      homeCrest: m.homeTeam?.crest ?? null,
-      awayCrest: m.awayTeam?.crest ?? null,
+      home: m.homeTeam?.name ?? (stable ? stable.home : "A definir"),
+      away: m.awayTeam?.name ?? (stable ? stable.away : "A definir"),
+      homeCrest: m.homeTeam?.crest ?? (stable ? stable.homeCrest : null),
+      awayCrest: m.awayTeam?.crest ?? (stable ? stable.awayCrest : null),
       status: mapStatus(m.status),
       homeScore: ft.home ?? null,
       awayScore: ft.away ?? null,
     };
   });
-
-  // Mantem ids estaveis: nao mexe se a API nao trouxe nada novo.
-  if (!matches.length) {
-    console.error("A API nao retornou jogos. Mantendo arquivo atual.");
-    process.exit(0);
-  }
 
   const payload = {
     updatedAt: new Date().toISOString(),
@@ -85,11 +120,10 @@ async function main() {
     matches: matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate)),
   };
 
-  // So reescreve se algo mudou (evita commits vazios).
+  const next = JSON.stringify(payload, null, 2) + "\n";
+  const stripTs = (s) => String(s).replace(/"updatedAt":\s*"[^"]*"/, "");
   let prev = "";
   try { prev = readFileSync(OUT, "utf8"); } catch {}
-  const next = JSON.stringify(payload, null, 2) + "\n";
-  const stripTs = (s) => s.replace(/"updatedAt":\s*"[^"]*"/, "");
   if (stripTs(prev) === stripTs(next)) {
     console.log("Sem mudancas nos placares. Nada a fazer.");
     process.exit(0);
@@ -97,7 +131,7 @@ async function main() {
 
   writeFileSync(OUT, next);
   const fin = matches.filter((m) => m.status === "FINISHED").length;
-  console.log(`OK: ${matches.length} jogos (${fin} encerrados) gravados em data/matches.json`);
+  console.log(`OK: ${matches.length} jogos (${fin} encerrados) gravados em matches.json`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

@@ -256,7 +256,7 @@ function openEntry(force){
 
 /* ============================================================ DADOS */
 async function loadMatches(){
-  const r=await fetch(`data/matches.json?t=${Date.now()}`); if(!r.ok) throw new Error("matches.json");
+  const r=await fetch(`matches.json?t=${Date.now()}`); if(!r.ok) throw new Error("matches.json");
   const d=await r.json();
   MATCHES=(d.matches||[]).map(m=>({round:1,...m})).sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
   const when=d.updatedAt?new Date(d.updatedAt):null;
@@ -271,7 +271,7 @@ async function loadPredictions(){
     if(!r.ok) throw new Error("JsonBin "+r.status);
     PROFILES=((await r.json()).record?.profiles)||[];
   }else{
-    const r=await fetch(`data/predictions.json?t=${Date.now()}`); if(!r.ok) throw new Error("predictions.json");
+    const r=await fetch(`predictions.json?t=${Date.now()}`); if(!r.ok) throw new Error("predictions.json");
     PROFILES=((await r.json()).profiles)||[];
   }
 }

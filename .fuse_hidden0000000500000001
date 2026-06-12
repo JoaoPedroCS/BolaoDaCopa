@@ -1,0 +1,142 @@
+#!/usr/bin/env node
+/**
+ * Atualiza matches.json com os placares/status reais da fase de grupos da Copa 2026.
+ * Fonte: football-data.org (gratis). Defina a env FOOTBALL_DATA_TOKEN.
+ *
+ * Uso local:  FOOTBALL_DATA_TOKEN=xxxx node update-results.mjs
+ * No GitHub Actions o token vem do secret FOOTBALL_DATA_TOKEN.
+ *
+ * IMPORTANTE: este arquivo ja vem com os 72 jogos e IDs ESTAVEIS (wc-001..wc-072).
+ * Os palpites em predictions.json sao indexados por esses IDs. Por isso o script
+ * NAO recria os IDs a partir da API: ele CASA cada jogo da API com a entrada
+ * existente (por data/hora + times) e PRESERVA o id, o grupo e a rodada locais,
+ * atualizando apenas placar, status, nomes e escudos. Assim os palpites nunca
+ * perdem o vinculo com o jogo.
+ *
+ * Requer Node 18+ (fetch nativo). Sem dependencias externas.
+ */
+import { readFileSync, writeFileSync } from "node:fs";
+
+const TOKEN = process.env.FOOTBALL_DATA_TOKEN;
+const OUT = new URL("./matches.json", import.meta.url);
+const API = "https://api.football-data.org/v4/competitions/WC/matches?stage=GROUP_STAGE";
+
+function mapStatus(s) {
+  if (s === "FINISHED" || s === "AWARDED") return "FINISHED";
+  if (s === "IN_PLAY" || s === "PAUSED") return "IN_PLAY";
+  return "TIMED";
+}
+function groupLetter(g) {
+  if (!g) return "?";
+  return String(g).replace(/^GROUP[_\s]*/i, "").trim().toUpperCase();
+}
+
+// Normaliza nome de time: minusculo, sem acento, so letras, + apelidos comuns.
+function norm(name) {
+  let s = String(name || "").toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z]/g, "");
+  const alias = {
+    southkorea: "korearepublic", republicofkorea: "korearepublic",
+    usa: "unitedstates", unitedstatesofamerica: "unitedstates",
+    turkiye: "turkey",
+    cotedivoire: "ivorycoast",
+    czechrepublic: "czechia",
+    congodr: "drcongo", democraticrepublicofthecongo: "drcongo", democraticrepublicofcongo: "drcongo",
+    caboverde: "capeverde",
+    bosniaherzegovina: "bosniaandherzegovina", bosnia: "bosniaandherzegovina",
+  };
+  return alias[s] || s;
+}
+const teamSet = (m) => new Set([norm(m.home), norm(m.away)]);
+function overlap(a, b) {
+  let n = 0;
+  for (const x of a) if (b.has(x)) n++;
+  return n;
+}
+
+async function main() {
+  if (!TOKEN) {
+    console.error("ERRO: defina a variavel de ambiente FOOTBALL_DATA_TOKEN.");
+    process.exit(1);
+  }
+
+  // Carrega o arquivo atual (jogos + IDs estaveis).
+  let prevPayload = null;
+  try { prevPayload = JSON.parse(readFileSync(OUT, "utf8")); } catch {}
+  const existing = (prevPayload && prevPayload.matches) || [];
+
+  const res = await fetch(API, { headers: { "X-Auth-Token": TOKEN } });
+  if (!res.ok) {
+    console.error(`API respondeu ${res.status}: ${await res.text()}`);
+    process.exit(1);
+  }
+  const data = await res.json();
+  const raw = data.matches || [];
+  if (!raw.length) {
+    console.error("A API nao retornou jogos. Mantendo arquivo atual.");
+    process.exit(0);
+  }
+
+  // Para cada jogo da API, encontra a entrada local correspondente (por data + times)
+  // e reaproveita o id/grupo/rodada locais. Casa por hora de inicio; quando ha empate
+  // de horario (ultima rodada), desempata pelo maior overlap de nomes de times.
+  const used = new Set();
+  function findStable(apiMatch) {
+    const t = new Date(apiMatch.utcDate).getTime();
+    const ntok = teamSet({ home: apiMatch.homeTeam?.name, away: apiMatch.awayTeam?.name });
+    let best = null, bestScore = -1;
+    for (const e of existing) {
+      if (used.has(e.id)) continue;
+      const dtMin = Math.abs(new Date(e.utcDate).getTime() - t) / 60000;
+      if (dtMin > 180) continue; // tolera ate 3h de diferenca de agenda
+      const ov = overlap(ntok, teamSet(e));
+      const score = ov * 1000 - dtMin; // prioriza times iguais, depois horario mais proximo
+      if (score > bestScore) { bestScore = score; best = e; }
+    }
+    if (best) used.add(best.id);
+    return best;
+  }
+
+  const matches = raw.map((m) => {
+    const ft = m.score?.fullTime || {};
+    const stable = findStable(m);
+    const group = stable ? stable.group : groupLetter(m.group);
+    const round = stable ? stable.round : (Number.isInteger(m.matchday) ? m.matchday : 1);
+    return {
+      id: stable ? stable.id : "wc-" + m.id,
+      group,
+      round,
+      utcDate: m.utcDate,
+      home: m.homeTeam?.name ?? (stable ? stable.home : "A definir"),
+      away: m.awayTeam?.name ?? (stable ? stable.away : "A definir"),
+      homeCrest: m.homeTeam?.crest ?? (stable ? stable.homeCrest : null),
+      awayCrest: m.awayTeam?.crest ?? (stable ? stable.awayCrest : null),
+      status: mapStatus(m.status),
+      homeScore: ft.home ?? null,
+      awayScore: ft.away ?? null,
+    };
+  });
+
+  const payload = {
+    updatedAt: new Date().toISOString(),
+    source: "football-data.org",
+    matches: matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate)),
+  };
+
+  // So reescreve se algo mudou (evita commits vazios).
+  const next = JSON.stringify(payload, null, 2) + "\n";
+  const stripTs = (s) => String(s).replace(/"updatedAt":\s*"[^"]*"/, "");
+  let prev = "";
+  try { prev = readFileSync(OUT, "utf8"); } catch {}
+  if (stripTs(prev) === stripTs(next)) {
+    console.log("Sem mudancas nos placares. Nada a fazer.");
+    process.exit(0);
+  }
+
+  writeFileSync(OUT, next);
+  const fin = matches.filter((m) => m.status === "FINISHED").length;
+  console.log(`OK: ${matches.length} jogos (${fin} encerrados) gravados em matches.json`);
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });
