@@ -4,7 +4,7 @@ name: Atualizar placares
 # Tambem da pra rodar na mao pela aba Actions ("Run workflow").
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 permissions:
