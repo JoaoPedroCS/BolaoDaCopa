@@ -491,6 +491,13 @@ function openPickEditor(){
   }).join("");
   $("#modal").innerHTML=`<button class="x" id="m-x">×</button>
     <h3>Palpites de ${esc(p.name)}</h3>
+    <div style="display:flex;align-items:center;gap:10px;margin:8px 0 4px">
+      ${avatar(p,"")}
+      <div style="flex:1;min-width:0">
+        <label class="locked-note" style="display:block;margin-bottom:3px">Foto (cole a URL de uma imagem)</label>
+        <input class="fld" id="m-photo" type="url" style="width:100%" placeholder="https://..." value="${esc(p.photo||"")}">
+      </div>
+    </div>
     <p class="locked-note" style="margin:4px 0 6px">Só dá pra editar jogos que ainda não começaram.</p>
     ${rows}
     <div class="modal-actions"><button class="btn ghost" id="m-cancel">Cancelar</button><button class="btn primary" id="m-ok">Salvar</button></div>`;
@@ -503,7 +510,8 @@ function openPickEditor(){
       if($(".ph",row).disabled) return; // mantém o que já estava
       if(h!==""&&a!=="") picks[mid]={home:+h,away:+a}; else delete picks[mid];
     });
-    p.picks=picks; PROFILES=PROFILES.map(x=>x.id===p.id?p:x);
+    p.picks=picks; p.photo=$("#m-photo").value.trim();
+    PROFILES=PROFILES.map(x=>x.id===p.id?p:x);
     DIRTY=true; closeModal(); render(); save();
   };
 }
