@@ -182,7 +182,7 @@
    CONFIGURAÇÃO  (mesma ideia de antes: arquivo local OU JsonBin)
    ============================================================ */
 const CONFIG = {
-  jsonbin: { enabled:false, binId:"", accessKey:"" }
+  jsonbin: { enabled:true, binId:"6a2c15e9da38895dfeb5363d", accessKey:"$2a$10$sB4a4hNUpA93mz5lq7f27eSS.7mjLMuuMSMF8UcThQdIgBtuVyoSG" }
 };
 
 /* ---------- Estado ---------- */
@@ -289,11 +289,9 @@ async function loadAll(){
 async function save(){
   const payload={updatedAt:new Date().toISOString(),profiles:PROFILES};
   if(CONFIG.jsonbin.enabled&&CONFIG.jsonbin.binId){
-    let key=sessionStorage.getItem("jb_write_key");
-    if(!key){ key=prompt("Chave de ESCRITA do JsonBin (fica só nesta aba)."); if(!key) return; sessionStorage.setItem("jb_write_key",key.trim()); }
     const r=await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}`,{method:"PUT",
-      headers:{"Content-Type":"application/json","X-Master-Key":key.trim(),"X-Bin-Versioning":"false"},body:JSON.stringify(payload)});
-    if(!r.ok){ sessionStorage.removeItem("jb_write_key"); alert("Falha ao salvar no JsonBin ("+r.status+")."); return; }
+      headers:{"Content-Type":"application/json","X-Access-Key":CONFIG.jsonbin.accessKey,"X-Bin-Versioning":"false"},body:JSON.stringify(payload)});
+    if(!r.ok){ alert("Falha ao salvar no JsonBin ("+r.status+")."); return; }
     DIRTY=false; flash("Salvo no JsonBin ✓");
   }else{
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
