@@ -1,0 +1,14 @@
+{
+  "updatedAt": "2026-06-12T09:00:00Z",
+  "source": "seed",
+  "note": "Dados iniciais de exemplo. Sao substituidos automaticamente pela GitHub Action a cada hora com a lista completa e os placares reais.",
+  "matches": [
+    { "id": "wc-001", "group": "A", "round": 1, "utcDate": "2026-06-11T19:00:00Z", "home": "Mexico", "away": "South Africa", "homeCrest": "https://flagcdn.com/w80/mx.png", "awayCrest": "https://flagcdn.com/w80/za.png", "status": "FINISHED", "homeScore": 2, "awayScore": 0 },
+    { "id": "wc-002", "group": "A", "round": 1, "utcDate": "2026-06-12T02:00:00Z", "home": "Korea Republic", "away": "Czechia", "homeCrest": "https://flagcdn.com/w80/kr.png", "awayCrest": "https://flagcdn.com/w80/cz.png", "status": "TIMED", "homeScore": null, "awayScore": null },
+    { "id": "wc-003", "group": "B", "round": 1, "utcDate": "2026-06-12T20:00:00Z", "home": "Canada", "away": "Bosnia and Herzegovina", "homeCrest": "https://flagcdn.com/w80/ca.png", "awayCrest": "https://flagcdn.com/w80/ba.png", "status": "TIMED", "homeScore": null, "awayScore": null },
+    { "id": "wc-004", "group": "B", "round": 1, "utcDate": "2026-06-13T19:00:00Z", "home": "Qatar", "away": "Switzerland", "homeCrest": "https://flagcdn.com/w80/qa.png", "awayCrest": "https://flagcdn.com/w80/ch.png", "status": "TIMED", "homeScore": null, "awayScore": null },
+    { "id": "wc-005", "group": "C", "round": 1, "utcDate": "2026-06-13T22:00:00Z", "home": "Brazil", "away": "Morocco", "homeCrest": "https://flagcdn.com/w80/br.png", "awayCrest": "https://flagcdn.com/w80/ma.png", "status": "TIMED", "homeScore": null, "awayScore": null },
+    { "id": "wc-006", "group": "D", "round": 1, "utcDate": "2026-06-12T23:00:00Z", "home": "United States", "away": "Paraguay", "homeCrest": "https://flagcdn.com/w80/us.png", "awayCrest": "https://flagcdn.com/w80/py.png", "status": "TIMED", "homeScore": null, "awayScore": null },
+    { "id": "wc-007", "group": "D", "round": 2, "utcDate": "2026-06-18T23:00:00Z", "home": "United States", "away": "Australia", "homeCrest": "https://flagcdn.com/w80/us.png", "awayCrest": "https://flagcdn.com/w80/au.png", "status": "TIMED", "homeScore": null, "awayScore": null }
+  ]
+}

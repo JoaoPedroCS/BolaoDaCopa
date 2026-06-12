@@ -1,0 +1,15 @@
+{
+  "updatedAt": "2026-06-12T09:00:00Z",
+  "profiles": [
+    { "id": "amanda",   "name": "Amanda",   "photo": "", "bio": "", "picks": {} },
+    { "id": "tiago",    "name": "Tiago",    "photo": "", "bio": "", "picks": {} },
+    { "id": "ednelson", "name": "Ednelson", "photo": "", "bio": "", "picks": {} },
+    { "id": "duda",     "name": "Duda",     "photo": "", "bio": "", "picks": {} },
+    { "id": "leny",     "name": "Leny",     "photo": "", "bio": "", "picks": {} },
+    { "id": "mah",      "name": "Mah",      "photo": "", "bio": "", "picks": {} },
+    { "id": "joao",     "name": "João",     "photo": "", "bio": "", "picks": {} },
+    { "id": "thaisa",   "name": "Thaísa",   "photo": "", "bio": "", "picks": {} },
+    { "id": "bela",     "name": "Bela",     "photo": "", "bio": "", "picks": {} },
+    { "id": "mateus",   "name": "Mateus",   "photo": "", "bio": "", "picks": {} }
+  ]
+}

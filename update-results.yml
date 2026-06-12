@@ -1,0 +1,44 @@
+name: Atualizar placares
+
+# Roda de hora em hora (o cron do GitHub pode atrasar alguns minutos em horarios de pico).
+# Tambem da pra rodar na mao pela aba Actions ("Run workflow").
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-results
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Buscar placares
+        env:
+          FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+        run: node scripts/update-results.mjs
+
+      - name: Commit se houver mudanca
+        run: |
+          if [[ -n "$(git status --porcelain data/matches.json)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/matches.json
+            git commit -m "chore: atualiza placares [skip ci]"
+            git push
+          else
+            echo "Nada mudou."
+          fi
