@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-13T19:09:37.072Z",
+  "updatedAt": "2026-06-13T20:45:41.159Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -65,7 +65,7 @@
       "awayCrest": "https://crests.football-data.org/788.svg",
       "status": "IN_PLAY",
       "homeScore": 0,
-      "awayScore": 0
+      "awayScore": 1
     },
     {
       "id": "wc-013",
