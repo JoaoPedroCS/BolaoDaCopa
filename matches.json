@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-13T03:03:54.304Z",
+  "updatedAt": "2026-06-13T19:09:37.072Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -63,9 +63,9 @@
       "away": "Switzerland",
       "homeCrest": "https://crests.football-data.org/8030.svg",
       "awayCrest": "https://crests.football-data.org/788.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "IN_PLAY",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-013",
