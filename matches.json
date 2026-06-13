@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-12T22:06:21.783Z",
+  "updatedAt": "2026-06-13T03:03:54.304Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -50,9 +50,9 @@
       "away": "Paraguay",
       "homeCrest": "https://crests.football-data.org/usa.svg",
       "awayCrest": "https://crests.football-data.org/761.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "IN_PLAY",
+      "homeScore": 3,
+      "awayScore": 1
     },
     {
       "id": "wc-008",
