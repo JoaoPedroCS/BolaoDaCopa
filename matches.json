@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-14T12:20:25.205Z",
+  "updatedAt": "2026-06-14T14:37:10.557Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -38,8 +38,8 @@
       "homeCrest": "https://crests.football-data.org/canada.svg",
       "awayCrest": "https://crests.football-data.org/bosnia.svg",
       "status": "FINISHED",
-      "homeScore": null,
-      "awayScore": null
+      "homeScore": 1,
+      "awayScore": 1
     },
     {
       "id": "wc-019",
