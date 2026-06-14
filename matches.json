@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-14T00:53:54.623Z",
+  "updatedAt": "2026-06-14T01:41:02.922Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -89,9 +89,9 @@
       "away": "Scotland",
       "homeCrest": "https://crests.football-data.org/haiti.svg",
       "awayCrest": "https://crests.football-data.org/814.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "IN_PLAY",
+      "homeScore": 0,
+      "awayScore": 1
     },
     {
       "id": "wc-020",
