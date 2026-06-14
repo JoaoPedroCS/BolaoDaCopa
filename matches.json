@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-14T19:11:03.994Z",
+  "updatedAt": "2026-06-14T20:45:10.703Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -128,9 +128,9 @@
       "away": "Japan",
       "homeCrest": "https://crests.football-data.org/8601.svg",
       "awayCrest": "https://crests.football-data.org/766.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "IN_PLAY",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-026",
