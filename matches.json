@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-14T03:49:36.514Z",
+  "updatedAt": "2026-06-14T06:26:45.790Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -102,9 +102,9 @@
       "away": "Turkey",
       "homeCrest": "https://crests.football-data.org/779.svg",
       "awayCrest": "https://crests.football-data.org/803.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 0
     },
     {
       "id": "wc-025",
