@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-13T23:02:00.409Z",
+  "updatedAt": "2026-06-14T00:53:54.623Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -76,7 +76,7 @@
       "away": "Morocco",
       "homeCrest": "https://crests.football-data.org/764.svg",
       "awayCrest": "https://crests.football-data.org/morocco.svg",
-      "status": "IN_PLAY",
+      "status": "FINISHED",
       "homeScore": 1,
       "awayScore": 1
     },
