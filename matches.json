@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-14T17:54:54.002Z",
+  "updatedAt": "2026-06-14T19:11:03.994Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -115,8 +115,8 @@
       "away": "Curaçao",
       "homeCrest": "https://crests.football-data.org/759.svg",
       "awayCrest": "https://crests.football-data.org/curacao.svg",
-      "status": "IN_PLAY",
-      "homeScore": 2,
+      "status": "FINISHED",
+      "homeScore": 7,
       "awayScore": 1
     },
     {
