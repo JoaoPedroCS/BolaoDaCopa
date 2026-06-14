@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-14T20:45:10.703Z",
+  "updatedAt": "2026-06-14T22:02:53.961Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -38,8 +38,8 @@
       "homeCrest": "https://crests.football-data.org/canada.svg",
       "awayCrest": "https://crests.football-data.org/bosnia.svg",
       "status": "FINISHED",
-      "homeScore": 1,
-      "awayScore": 1
+      "homeScore": null,
+      "awayScore": null
     },
     {
       "id": "wc-019",
@@ -128,9 +128,9 @@
       "away": "Japan",
       "homeCrest": "https://crests.football-data.org/8601.svg",
       "awayCrest": "https://crests.football-data.org/766.svg",
-      "status": "IN_PLAY",
-      "homeScore": 0,
-      "awayScore": 0
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 2
     },
     {
       "id": "wc-026",
