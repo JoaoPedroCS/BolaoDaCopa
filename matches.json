@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-14T22:02:53.961Z",
+  "updatedAt": "2026-06-15T02:50:31.509Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -141,9 +141,9 @@
       "away": "Ecuador",
       "homeCrest": "https://crests.football-data.org/787.svg",
       "awayCrest": "https://crests.football-data.org/791.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 0
     },
     {
       "id": "wc-032",
@@ -154,9 +154,9 @@
       "away": "Tunisia",
       "homeCrest": "https://crests.football-data.org/792.svg",
       "awayCrest": "https://crests.football-data.org/tunisia.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "IN_PLAY",
+      "homeScore": 2,
+      "awayScore": 1
     },
     {
       "id": "wc-043",
