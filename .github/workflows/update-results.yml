@@ -29,7 +29,7 @@ jobs:
       - name: Buscar placares
         env:
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
-        run: node update-results.mjs
+        run: node scripts/update-results.mjs
 
       - name: Commit se houver mudanca
         run: |
