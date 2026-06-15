@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-15T02:50:31.509Z",
+  "updatedAt": "2026-06-15T08:51:22.007Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -154,8 +154,8 @@
       "away": "Tunisia",
       "homeCrest": "https://crests.football-data.org/792.svg",
       "awayCrest": "https://crests.football-data.org/tunisia.svg",
-      "status": "IN_PLAY",
-      "homeScore": 2,
+      "status": "FINISHED",
+      "homeScore": 5,
       "awayScore": 1
     },
     {
