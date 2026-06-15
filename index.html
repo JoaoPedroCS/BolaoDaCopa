@@ -520,7 +520,18 @@ function openMatch(id){
     return {p,pk,sc,has:!!(pk&&pk.home!=null)};
   });
   if(fin) rows.sort((a,b)=> (b.sc??-1)-(a.sc??-1) || a.p.name.localeCompare(b.p.name,"pt"));
-  else rows.sort((a,b)=> (b.has-a.has) || a.p.name.localeCompare(b.p.name,"pt"));
+  else rows.sort((a,b)=>{
+    // Jogo ainda nao aconteceu: ordena os palpites por resultado previsto.
+    // Topo: maiores vitorias da casa - Meio: empates - Base: maiores vitorias do visitante.
+    // Desempate 1: saldo de gols - Desempate 2: gols totais - Desempate 3: nome.
+    if(a.has!==b.has) return b.has-a.has;                       // quem palpitou vem antes de quem nao palpitou
+    if(!a.has) return a.p.name.localeCompare(b.p.name,"pt");    // ambos sem palpite
+    const sa=a.pk.home-a.pk.away, sb=b.pk.home-b.pk.away;       // saldo de gols (positivo = vitoria casa)
+    if(sb!==sa) return sb-sa;                                   // saldo desc: casa no topo, fora na base
+    const ta=a.pk.home+a.pk.away, tb=b.pk.home+b.pk.away;       // gols totais
+    if(tb!==ta) return tb-ta;                                   // mais gols primeiro
+    return a.p.name.localeCompare(b.p.name,"pt");
+  });
   const list=rows.map((r,i)=>{
     const scoreTxt=r.has?`${r.pk.home} – ${r.pk.away}`:"—";
     const tag = r.sc===null?`<span class="ptag pending">··</span>`:`<span class="ptag ${tagClass(r.sc)}">${fmtPts(r.sc)} pts</span>`;
@@ -537,7 +548,7 @@ function openMatch(id){
       <div style="display:flex;align-items:center;gap:12px"><span class="bignum">${fin?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${fin?m.awayScore:"–"}</span></div>
       <div class="team away"><span class="tn">${esc(m.away)}</span><img src="${esc(m.awayCrest||'')}" alt="" onerror="this.style.visibility='hidden'"></div>
     </div>
-    ${fin?'<p style="color:var(--muted); margin-bottom:16px; font-size:14px;">Lista ordenada por quem pontuou mais.</p>':`<p style="color:var(--muted); margin-bottom:16px; font-size:15px; font-weight:600;">Data: ${esc(kickoff(m))}</p>`}
+    ${fin?'<p style="color:var(--muted); margin-bottom:16px; font-size:14px;">Lista ordenada por quem pontuou mais.</p>':`<p style="color:var(--muted); margin-bottom:6px; font-size:15px; font-weight:600;">Data: ${esc(kickoff(m))}</p><p style="color:var(--muted); margin-bottom:16px; font-size:13px;">Palpites ordenados: maiores vitorias da casa no topo, empates no meio e maiores vitorias do visitante embaixo.</p>`}
     ${list}`;
   openModal(); $("#m-x").onclick=()=>closeModal();
 }
