@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-15T21:59:42.594Z",
+  "updatedAt": "2026-06-15T23:48:35.398Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -38,8 +38,8 @@
       "homeCrest": "https://crests.football-data.org/canada.svg",
       "awayCrest": "https://crests.football-data.org/bosnia.svg",
       "status": "FINISHED",
-      "homeScore": null,
-      "awayScore": null
+      "homeScore": 1,
+      "awayScore": 1
     },
     {
       "id": "wc-019",
@@ -193,9 +193,9 @@
       "away": "Uruguay",
       "homeCrest": "https://crests.football-data.org/saudi_arabia.svg",
       "awayCrest": "https://crests.football-data.org/758.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "IN_PLAY",
+      "homeScore": 1,
+      "awayScore": 0
     },
     {
       "id": "wc-038",
