@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-15T08:51:22.007Z",
+  "updatedAt": "2026-06-15T19:02:44.275Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -167,9 +167,9 @@
       "away": "Cape Verde Islands",
       "homeCrest": "https://crests.football-data.org/760.svg",
       "awayCrest": "https://crests.football-data.org/cape_verde.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-037",
