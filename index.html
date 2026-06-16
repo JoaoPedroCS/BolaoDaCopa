@@ -7,8 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="icon" type="image/png" href="favicon.png" />
-<link rel="apple-touch-icon" href="favicon.png" />
+<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png" />
+<link rel="apple-touch-icon" href="assets/icon-192.png" />
+<link rel="manifest" href="site.webmanifest" />
+<meta name="theme-color" content="#007A33" />
 
 <style>
   :root {
@@ -160,6 +164,7 @@
   .ptag.p25 { background: var(--p25); } 
   .ptag.p0 { background: var(--p0); color: var(--muted); }
   .ptag.pending { background: transparent; color: var(--muted); border: 2px dashed var(--line); }
+  .ptag.parcial { opacity: .92; box-shadow: inset 0 0 0 2px rgba(255,255,255,.55); }
 
   /* Grade de Perfis */
   .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
@@ -295,11 +300,18 @@ function compressImage(file, callback) {
    CONFIGURAÇÃO 
    ============================================================ */
 const CONFIG = {
-  jsonbin: { enabled:true, binId:"6a2c15e9da38895dfeb5363d", accessKey:"$2a$10$sB4a4hNUpA93mz5lq7f27eSS.7mjLMuuMSMF8UcThQdIgBtuVyoSG" }
+  jsonbin: { enabled:true, binId:"6a2c15e9da38895dfeb5363d", accessKey:"$2a$10$sB4a4hNUpA93mz5lq7f27eSS.7mjLMuuMSMF8UcThQdIgBtuVyoSG" },
+  // TODOS os jogos (calendario + placar + ao vivo) vindos do Worker da Cloudflare.
+  // Vazio => usa o matches.json local do repo. Ponha aqui a URL do worker que devolve
+  // {updatedAt, source, matches:[...]} pra ele virar a unica fonte dos jogos.
+  matchesUrl: "https://bolao-jogos.joaohulck.workers.dev/",
+  // Placares AO VIVO dedicados (legado). Com matchesUrl preenchido, deixe vazio:
+  // o ao vivo ja vem junto na lista completa.
+  liveUrl: ""
 };
 
 /* ---------- Estado ---------- */
-let MATCHES=[], PROFILES=[];
+let MATCHES=[], PROFILES=[], LIVE=null;
 let VIEW="ranking";
 let RANK_ROUND="ALL";       
 let GROUP_FILTER="ALL";
@@ -311,15 +323,24 @@ const $$=(s,el=document)=>[...el.querySelectorAll(s)];
 const esc=(s)=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 /* ============================================================ PONTUAÇÃO */
-function scorePick(pick,m){
-  if(m.status!=="FINISHED"||m.homeScore==null||m.awayScore==null) return null;
+function pointsFor(pick,ah,aa){
   if(!pick||pick.home==null||pick.away==null) return 0;
-  const ph=+pick.home,pa=+pick.away,ah=+m.homeScore,aa=+m.awayScore;
+  const ph=+pick.home,pa=+pick.away;
   if(ph===ah&&pa===aa) return 5;
   const ps=Math.sign(ph-pa),as=Math.sign(ah-aa);
   if(ps!==as) return 0;
   if(as===0) return 3;
   return 2.5;
+}
+// Pontos OFICIAIS: so existem quando o jogo terminou -> sao os que entram no ranking.
+function scorePick(pick,m){
+  if(m.status!=="FINISHED"||m.homeScore==null||m.awayScore==null) return null;
+  return pointsFor(pick,+m.homeScore,+m.awayScore);
+}
+// Pontos PARCIAIS de um jogo EM ANDAMENTO: so para exibir; NUNCA somados ao ranking.
+function partialScore(pick,m){
+  if(m.status!=="IN_PLAY"||m.homeScore==null||m.awayScore==null) return null;
+  return pointsFor(pick,+m.homeScore,+m.awayScore);
 }
 const tagClass=(p)=>p===5?"p5":p===3?"p3":p===2.5?"p25":"p0";
 const fmtPts=(n)=>Number.isInteger(n)?String(n):String(n).replace(".",",");
@@ -369,9 +390,13 @@ function openEntry(force){
 
 /* ============================================================ DADOS */
 async function loadMatches(){
-  const r=await fetch(`matches.json?t=${Date.now()}`); if(!r.ok) throw new Error("matches.json");
+  const base=CONFIG.matchesUrl||"data/matches.json";
+  const src=base+(base.includes("?")?"&":"?")+"t="+Date.now();
+  const r=await fetch(src); if(!r.ok) throw new Error("matches");
   const d=await r.json();
-  MATCHES=(d.matches||[]).map(m=>({round:1,...m})).sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
+  // O worker ja entrega o ao vivo embutido: mapeia minute -> liveMinute pros jogos IN_PLAY.
+  MATCHES=(d.matches||[]).map(m=>({round:1,...m, ...(m.minute!=null?{liveMinute:m.minute}:{})}))
+    .sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
   const when=d.updatedAt?new Date(d.updatedAt):null;
   const live=MATCHES.some(m=>m.status==="IN_PLAY");
   $("#syncInfo").innerHTML=(live?'<span style="color:#FDE047; font-weight:bold;">● AO VIVO</span> · ':'')+
@@ -382,15 +407,49 @@ async function loadPredictions(){
     const h={}; if(CONFIG.jsonbin.accessKey) h["X-Access-Key"]=CONFIG.jsonbin.accessKey;
     const r=await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}/latest`,{headers:h});
     if(!r.ok) throw new Error("JsonBin "+r.status);
-    PROFILES=((await r.json()).record?.profiles)||[];
+    const rec=(await r.json()).record||{};
+    PROFILES=rec.profiles||[];
+    if(!CONFIG.liveUrl&&!CONFIG.matchesUrl) LIVE=normLive(rec.live);
   }else{
-    const r=await fetch(`predictions.json?t=${Date.now()}`); if(!r.ok) throw new Error("predictions.json");
-    PROFILES=((await r.json()).profiles)||[];
+    const r=await fetch(`data/predictions.json?t=${Date.now()}`); if(!r.ok) throw new Error("predictions.json");
+    const d=await r.json();
+    PROFILES=d.profiles||[];
+    if(!CONFIG.liveUrl&&!CONFIG.matchesUrl) LIVE=normLive(d.live);
   }
+}
+// Mantem no LIVE apenas jogos EM ANDAMENTO com um placar valido.
+function normLive(blk){
+  if(!blk||!Array.isArray(blk.matches)) return null;
+  const matches=blk.matches.filter(x=>x&&x.id&&x.status==="IN_PLAY");
+  return matches.length?{updatedAt:blk.updatedAt||null,matches}:null;
+}
+// Fonte dedicada de placares ao vivo (CONFIG.liveUrl), quando configurada.
+async function loadLive(){
+  if(!CONFIG.liveUrl) return;            // sem URL dedicada o LIVE ja veio do predictions
+  try{
+    const u=CONFIG.liveUrl+(CONFIG.liveUrl.includes("?")?"&":"?")+"t="+Date.now();
+    const r=await fetch(u); if(!r.ok) return;
+    const d=await r.json();
+    LIVE=normLive(d.live||(d.record&&d.record.live)||d);
+  }catch(e){}
+}
+// Sobrepoe o placar ao vivo (LIVE) sobre os jogos vindos do matches.json.
+function applyLive(){
+  if(!LIVE) return;
+  const byId=new Map(LIVE.matches.map(x=>[x.id,x]));
+  MATCHES.forEach(m=>{
+    const lv=byId.get(m.id);
+    if(!lv||m.status==="FINISHED") return;   // resultado final sempre prevalece
+    if(lv.homeScore!=null) m.homeScore=lv.homeScore;
+    if(lv.awayScore!=null) m.awayScore=lv.awayScore;
+    m.status=lv.status||m.status;
+    if(lv.minute!=null) m.liveMinute=lv.minute;
+  });
 }
 async function loadAll(){
   try{
     await Promise.all([loadMatches(),loadPredictions()]);
+    await loadLive(); applyLive();
     renderIdentBar(); buildTabs();
     if(!IDENTITY) openEntry(true); else render();
   }catch(e){
@@ -401,6 +460,7 @@ async function loadAll(){
 /* ============================================================ SALVAR */
 async function save(){
   const payload={updatedAt:new Date().toISOString(),profiles:PROFILES};
+  if(LIVE) payload.live=LIVE;   // mantem o bloco "live" por ULTIMO no JSON
   if(CONFIG.jsonbin.enabled&&CONFIG.jsonbin.binId){
     const r=await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}`,{method:"PUT",
       headers:{"Content-Type":"application/json","X-Access-Key":CONFIG.jsonbin.accessKey,"X-Bin-Versioning":"false"},body:JSON.stringify(payload)});
@@ -498,15 +558,17 @@ function renderJogos(){
 }
 function matchCard(m){
   const fin=m.status==="FINISHED"&&m.homeScore!=null;
+  const live=m.status==="IN_PLAY"&&m.homeScore!=null;
+  const show=fin||live;
   const nPicks=PROFILES.filter(p=>p.picks?.[m.id]?.home!=null).length;
   return `<div class="match" data-id="${esc(m.id)}">
     <div class="top"><span class="g">Grupo ${esc(m.group)} · Rodada ${m.round}</span>${statusBadge(m)}</div>
     <div class="scoreline">
       <div class="team home"><img src="${esc(m.homeCrest||'')}" alt="" onerror="this.style.visibility='hidden'"><span class="tn">${esc(m.home)}</span></div>
-      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">${fin?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${fin?m.awayScore:"–"}</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">${show?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${show?m.awayScore:"–"}</span></div>
       <div class="team away"><span class="tn">${esc(m.away)}</span><img src="${esc(m.awayCrest||'')}" alt="" onerror="this.style.visibility='hidden'"></div>
     </div>
-    ${fin?"":`<div class="kickoff">${esc(kickoff(m))}</div>`}
+    ${show?"":`<div class="kickoff">${esc(kickoff(m))}</div>`}
     <div class="cardfoot"><span>${nPicks} palpite${nPicks===1?"":"s"} registrados</span><span class="go">Ver palpites →</span></div>
   </div>`;
 }
@@ -515,11 +577,15 @@ function matchCard(m){
 function openMatch(id){
   const m=MATCHES.find(x=>x.id===id); if(!m) return;
   const fin=m.status==="FINISHED"&&m.homeScore!=null;
+  const live=m.status==="IN_PLAY"&&m.homeScore!=null;   // jogo em andamento com placar atual
   let rows=PROFILES.map(p=>{
-    const pk=p.picks?.[m.id]; const sc=scorePick(pk,m);
-    return {p,pk,sc,has:!!(pk&&pk.home!=null)};
+    const pk=p.picks?.[m.id];
+    const sc=scorePick(pk,m);                 // oficial (so quando termina)
+    const psc=live?partialScore(pk,m):null;   // parcial ao vivo (nao conta no ranking)
+    return {p,pk,sc,psc,has:!!(pk&&pk.home!=null)};
   });
   if(fin) rows.sort((a,b)=> (b.sc??-1)-(a.sc??-1) || a.p.name.localeCompare(b.p.name,"pt"));
+  else if(live) rows.sort((a,b)=> (b.psc??-1)-(a.psc??-1) || a.p.name.localeCompare(b.p.name,"pt"));
   else rows.sort((a,b)=>{
     // Jogo ainda nao aconteceu: ordena os palpites por resultado previsto.
     // Topo: maiores vitorias da casa - Meio: empates - Base: maiores vitorias do visitante.
@@ -532,23 +598,33 @@ function openMatch(id){
     if(tb!==ta) return tb-ta;                                   // mais gols primeiro
     return a.p.name.localeCompare(b.p.name,"pt");
   });
+  const ranked=fin||live;   // listas pontuadas mostram posicao (1o, 2o...)
   const list=rows.map((r,i)=>{
     const scoreTxt=r.has?`${r.pk.home} – ${r.pk.away}`:"—";
-    const tag = r.sc===null?`<span class="ptag pending">··</span>`:`<span class="ptag ${tagClass(r.sc)}">${fmtPts(r.sc)} pts</span>`;
+    const shown=fin?r.sc:(live?r.psc:null);
+    const tag = shown===null
+      ? `<span class="ptag pending">··</span>`
+      : `<span class="ptag ${tagClass(shown)}${live?' parcial':''}">${fmtPts(shown)} pts${live?'*':''}</span>`;
     const mine=me()&&me().id===r.p.id;
     return `<div class="pick-line${mine?' me':''}">
-      <div class="pl-who">${fin?`<span class="pl-rank">${i+1}º</span>`:""}${avatar(r.p)}<span class="nm">${esc(r.p.name)}${mine?'<span class="youtag">Você</span>':''}</span></div>
+      <div class="pl-who">${ranked?`<span class="pl-rank">${i+1}º</span>`:""}${avatar(r.p)}<span class="nm">${esc(r.p.name)}${mine?'<span class="youtag">Você</span>':''}</span></div>
       <div class="pl-right"><span class="pscore${r.has?'':' none'}">${scoreTxt}</span>${tag}</div></div>`;
   }).join("") || `<div class="empty">Ninguém palpitou ainda.</div>`;
   
+  const liveMin = m.liveMinute!=null ? ` · ${esc(String(m.liveMinute))}'` : "";
+  const headNote = fin
+    ? '<p style="color:var(--muted); margin-bottom:16px; font-size:14px;">Lista ordenada por quem pontuou mais.</p>'
+    : live
+      ? '<p style="color:var(--live); margin-bottom:16px; font-size:13px; font-weight:600;">Pontuação parcial ao vivo, com o placar atual — <u>não conta no ranking</u> até o jogo terminar.</p>'
+      : `<p style="color:var(--muted); margin-bottom:6px; font-size:15px; font-weight:600;">Data: ${esc(kickoff(m))}</p><p style="color:var(--muted); margin-bottom:16px; font-size:13px;">Palpites ordenados: maiores vitorias da casa no topo, empates no meio e maiores vitorias do visitante embaixo.</p>`;
   $("#modal").innerHTML=`<button class="x" id="m-x">✕</button>
-    <span class="status ${fin?'fin':(m.status==='IN_PLAY'?'live':'')}" style="display:inline-block;margin-bottom:12px;font-size:14px;">${fin?'Jogo Encerrado':(m.status==='IN_PLAY'?'● Ao vivo no momento':'Aguardando início')}</span>
+    <span class="status ${fin?'fin':(m.status==='IN_PLAY'?'live':'')}" style="display:inline-block;margin-bottom:12px;font-size:14px;">${fin?'Jogo Encerrado':(m.status==='IN_PLAY'?'● Ao vivo no momento'+liveMin:'Aguardando início')}</span>
     <div class="modal-score">
       <div class="team home"><img src="${esc(m.homeCrest||'')}" alt="" onerror="this.style.visibility='hidden'"><span class="tn">${esc(m.home)}</span></div>
-      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">${fin?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${fin?m.awayScore:"–"}</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">${(fin||live)?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${(fin||live)?m.awayScore:"–"}</span></div>
       <div class="team away"><span class="tn">${esc(m.away)}</span><img src="${esc(m.awayCrest||'')}" alt="" onerror="this.style.visibility='hidden'"></div>
     </div>
-    ${fin?'<p style="color:var(--muted); margin-bottom:16px; font-size:14px;">Lista ordenada por quem pontuou mais.</p>':`<p style="color:var(--muted); margin-bottom:6px; font-size:15px; font-weight:600;">Data: ${esc(kickoff(m))}</p><p style="color:var(--muted); margin-bottom:16px; font-size:13px;">Palpites ordenados: maiores vitorias da casa no topo, empates no meio e maiores vitorias do visitante embaixo.</p>`}
+    ${headNote}
     ${list}`;
   openModal(); $("#m-x").onclick=()=>closeModal();
 }
@@ -691,7 +767,26 @@ $("#scrim").addEventListener("click",e=>{ if(e.target.id==="scrim") closeModal()
 /* ============================================================ EVENTOS */
 $("#switchBtn").onclick=()=>openEntry(false);
 window.addEventListener("beforeunload",e=>{ if(DIRTY){ e.preventDefault(); e.returnValue=""; }});
-setInterval(()=>{ if(!DIRTY) loadMatches().then(()=>{ if($("#scrim").classList.contains("open")) return; render(); }).catch(()=>{}); }, 5*60*1000);
+// Auto-atualizacao. Com fonte na cloud (matchesUrl ou liveUrl, cacheada e barata) atualiza
+// a cada 60s; sem ela, recarrega tudo a cada 5 min pra nao estourar a cota do JsonBin.
+const FAST = !!(CONFIG.matchesUrl || CONFIG.liveUrl);
+const REFRESH_MS = FAST ? 60*1000 : 5*60*1000;
+let lastFull = Date.now();
+setInterval(()=>{
+  if(DIRTY) return;
+  const jobs=[];
+  if(CONFIG.matchesUrl){
+    // O worker entrega tudo (calendario+placar+ao vivo) cacheado: recarrega a lista sempre.
+    jobs.push(loadMatches());
+    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadPredictions()); }
+  }else if(CONFIG.liveUrl){
+    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadMatches()); }
+    jobs.push(loadLive());
+  }else{
+    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadMatches()); jobs.push(loadPredictions()); }
+  }
+  Promise.all(jobs).then(()=>{ applyLive(); if(!$("#scrim").classList.contains("open")) render(); }).catch(()=>{});
+}, REFRESH_MS);
 
 loadAll();
 </script>

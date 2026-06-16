@@ -801,5 +801,6 @@
         "wc-072": { "home": 1, "away": 1 }
       }
     }
-  ]
+  ],
+  "live": { "updatedAt": null, "matches": [] }
 }

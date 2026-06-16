@@ -18,7 +18,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const TOKEN = process.env.FOOTBALL_DATA_TOKEN;
-const OUT = new URL("../matches.json", import.meta.url);
+const OUT = new URL("../data/matches.json", import.meta.url);
 const API = "https://api.football-data.org/v4/competitions/WC/matches?stage=GROUP_STAGE";
 
 function mapStatus(s) {

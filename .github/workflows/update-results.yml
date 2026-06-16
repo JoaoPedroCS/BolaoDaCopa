@@ -1,10 +1,12 @@
-name: Atualizar placares1
+name: Atualizar semente (matches.json)
 
-# Roda de hora em hora (o cron do GitHub pode atrasar alguns minutos em horarios de pico).
-# Tambem da pra rodar na mao pela aba Actions ("Run workflow").
+# O placar/ao vivo agora vem do Cloudflare Worker; esta Action NAO roda mais sozinha.
+# Ela fica so como botao MANUAL ("Run workflow") pra regerar a SEMENTE matches.json
+# quando algo estrutural mudar (ex.: times definidos no chaveamento, escudos novos).
+# Pra religar a atualizacao automatica, descomente o bloco schedule abaixo.
 on:
-  schedule:
-    - cron: "*/30 * * * *"
+  # schedule:
+  #   - cron: "*/30 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -33,10 +35,10 @@ jobs:
 
       - name: Commit se houver mudanca
         run: |
-          if [[ -n "$(git status --porcelain matches.json)" ]]; then
+          if [[ -n "$(git status --porcelain data/matches.json)" ]]; then
             git config user.name  "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add matches.json
+            git add data/matches.json
             git commit -m "chore: atualiza placares [skip ci]"
             git push
           else
