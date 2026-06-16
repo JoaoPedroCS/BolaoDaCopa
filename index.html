@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="color-scheme" content="light" />
+<meta name="supported-color-schemes" content="light" />
 <title>Bolão da Copa 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,8 +18,10 @@
 
 <style>
   :root {
+    /* Trava o site em tema claro: evita o "dark mode forçado" de alguns navegadores/Android. */
+    color-scheme: light only;
     /* Paleta Tema Copa - Acessível e Vibrante */
-    --pitch: #F4F7F6; 
+    --pitch: #F4F7F6;
     --panel: #FFFFFF; 
     --panel-2: #F8FAF9; 
     --line: #E2E8F0;
@@ -313,8 +317,8 @@ const CONFIG = {
 /* ---------- Estado ---------- */
 let MATCHES=[], PROFILES=[], LIVE=null;
 let VIEW="ranking";
-let RANK_ROUND="ALL";       
 let GROUP_FILTER="ALL";
+let JOGOS_ROUND="ALL";
 let IDENTITY=localStorage.getItem("bolao_identity")||null; 
 let DIRTY=false, ENTRY_LOCK=false;
 
@@ -332,32 +336,37 @@ function pointsFor(pick,ah,aa){
   if(as===0) return 3;
   return 2.5;
 }
-// Pontos OFICIAIS: so existem quando o jogo terminou -> sao os que entram no ranking.
+// Pontos OFICIAIS: so existem quando o jogo terminou.
 function scorePick(pick,m){
   if(m.status!=="FINISHED"||m.homeScore==null||m.awayScore==null) return null;
   return pointsFor(pick,+m.homeScore,+m.awayScore);
 }
-// Pontos PARCIAIS de um jogo EM ANDAMENTO: so para exibir; NUNCA somados ao ranking.
+// Pontos PARCIAIS de um jogo EM ANDAMENTO (placar atual).
 function partialScore(pick,m){
   if(m.status!=="IN_PLAY"||m.homeScore==null||m.awayScore==null) return null;
+  return pointsFor(pick,+m.homeScore,+m.awayScore);
+}
+// Pontos que CONTAM no ranking: jogo terminado OU em andamento (parcial ao vivo entra no total).
+function effScore(pick,m){
+  if(m.homeScore==null||m.awayScore==null) return null;
+  if(m.status!=="FINISHED"&&m.status!=="IN_PLAY") return null;
   return pointsFor(pick,+m.homeScore,+m.awayScore);
 }
 const tagClass=(p)=>p===5?"p5":p===3?"p3":p===2.5?"p25":"p0";
 const fmtPts=(n)=>Number.isInteger(n)?String(n):String(n).replace(".",",");
 
-function statsFor(prof,roundFilter="ALL"){
+function statsFor(prof){
   let total=0,c5=0,c3=0,c25=0,c0=0,played=0;
   for(const m of MATCHES){
-    if(roundFilter!=="ALL" && m.round!==roundFilter) continue;
-    const p=scorePick(prof.picks?.[m.id],m);
+    const p=effScore(prof.picks?.[m.id],m);
     if(p===null) continue;
     played++; total+=p;
     if(p===5)c5++; else if(p===3)c3++; else if(p===2.5)c25++; else c0++;
   }
   return {total,c5,c3,c25,c0,played};
 }
-function ranking(roundFilter){
-  return PROFILES.map(p=>({prof:p,...statsFor(p,roundFilter)}))
+function ranking(){
+  return PROFILES.map(p=>({prof:p,...statsFor(p)}))
     .sort((a,b)=> b.total-a.total || b.c5-a.c5 || b.c3-a.c3 || a.prof.name.localeCompare(b.prof.name,"pt"));
 }
 
@@ -509,10 +518,7 @@ function render(){
 /* ---- Ranking ---- */
 function renderRanking(){
   if(!PROFILES.length){ $("#content").innerHTML=`<div class="empty">Nenhum palpiteiro cadastrado.</div>`; return; }
-  const rounds=roundsAvailable();
-  const chips=[`<button class="chip" data-r="ALL" aria-pressed="${RANK_ROUND==='ALL'}">Total da Fase</button>`]
-    .concat(rounds.map(r=>`<button class="chip" data-r="${r}" aria-pressed="${RANK_ROUND===r}">Rodada ${r}</button>`)).join("");
-  const rk=ranking(RANK_ROUND);
+  const rk=ranking();
   const rows=rk.map((e,i)=>{
     const cls=(i===0?"r1":i===1?"r2":i===2?"r3":"")+(me()&&me().id===e.prof.id?" me":"");
     const tag=me()&&me().id===e.prof.id?`<span class="youtag">Você</span>`:"";
@@ -534,26 +540,28 @@ function renderRanking(){
       <div class="pts">${fmtPts(e.total)}<small>pontos</small></div>
     </div>`;
   }).join("");
-  $("#content").innerHTML=`<div class="filters">${chips}</div>
-    <div class="board"><div class="row head"><div>#</div><div>Palpiteiro</div><div style="text-align:right">Pts</div></div>${rows}</div>`;
-  $$(".chip").forEach(c=>c.onclick=()=>{ RANK_ROUND=c.dataset.r==="ALL"?"ALL":+c.dataset.r; renderRanking(); });
+  $("#content").innerHTML=`<div class="board"><div class="row head"><div>#</div><div>Palpiteiro</div><div style="text-align:right">Pts</div></div>${rows}</div>`;
 }
 
 /* ---- Jogos ---- */
 function renderJogos(){
   const groups=groupsAvailable();
+  const rounds=roundsAvailable();
+  const rchips=[`<button class="chip" data-r="ALL" aria-pressed="${JOGOS_ROUND==='ALL'}">Todas as Rodadas</button>`]
+    .concat(rounds.map(r=>`<button class="chip" data-r="${r}" aria-pressed="${JOGOS_ROUND===r}">Rodada ${r}</button>`)).join("");
   const gchips=[`<button class="chip" data-g="ALL" aria-pressed="${GROUP_FILTER==='ALL'}">Todos os Grupos</button>`]
     .concat(groups.map(g=>`<button class="chip" data-g="${g}" aria-pressed="${GROUP_FILTER===g}">Grupo ${g}</button>`)).join("");
-  const list=MATCHES.filter(m=>GROUP_FILTER==="ALL"||m.group===GROUP_FILTER);
-  let html=`<div class="filters">${gchips}</div>`;
+  const list=MATCHES.filter(m=>(GROUP_FILTER==="ALL"||m.group===GROUP_FILTER)&&(JOGOS_ROUND==="ALL"||m.round===JOGOS_ROUND));
+  let html=`<div class="filters">${rchips}</div><div class="filters">${gchips}</div>`;
   if(!list.length) html+=`<div class="empty">Sem jogos neste filtro.</div>`;
-  else for(const r of roundsAvailable()){
+  else for(const r of rounds){
     const inR=list.filter(m=>m.round===r);
     if(!inR.length) continue;
     html+=`<div class="roundhead">Rodada ${r}</div>`+inR.map(matchCard).join("");
   }
   $("#content").innerHTML=html;
-  $$(".chip").forEach(c=>c.onclick=()=>{ GROUP_FILTER=c.dataset.g; renderJogos(); });
+  $$(".chip[data-r]").forEach(c=>c.onclick=()=>{ JOGOS_ROUND=c.dataset.r==="ALL"?"ALL":+c.dataset.r; renderJogos(); });
+  $$(".chip[data-g]").forEach(c=>c.onclick=()=>{ GROUP_FILTER=c.dataset.g; renderJogos(); });
   $$(".match").forEach(el=>el.onclick=()=>openMatch(el.dataset.id));
 }
 function matchCard(m){
@@ -613,10 +621,10 @@ function openMatch(id){
   
   const liveMin = m.liveMinute!=null ? ` · ${esc(String(m.liveMinute))}'` : "";
   const headNote = fin
-    ? '<p style="color:var(--muted); margin-bottom:16px; font-size:14px;">Lista ordenada por quem pontuou mais.</p>'
+    ? ''
     : live
-      ? '<p style="color:var(--live); margin-bottom:16px; font-size:13px; font-weight:600;">Pontuação parcial ao vivo, com o placar atual — <u>não conta no ranking</u> até o jogo terminar.</p>'
-      : `<p style="color:var(--muted); margin-bottom:6px; font-size:15px; font-weight:600;">Data: ${esc(kickoff(m))}</p><p style="color:var(--muted); margin-bottom:16px; font-size:13px;">Palpites ordenados: maiores vitorias da casa no topo, empates no meio e maiores vitorias do visitante embaixo.</p>`;
+      ? '<p style="color:var(--live); margin-bottom:16px; font-size:13px; font-weight:600;">Pontuação parcial ao vivo, com o placar atual — <u>já entra no ranking</u> e muda conforme o jogo.</p>'
+      : `<p style="color:var(--muted); margin-bottom:16px; font-size:15px; font-weight:600;">Data: ${esc(kickoff(m))}</p>`;
   $("#modal").innerHTML=`<button class="x" id="m-x">✕</button>
     <span class="status ${fin?'fin':(m.status==='IN_PLAY'?'live':'')}" style="display:inline-block;margin-bottom:12px;font-size:14px;">${fin?'Jogo Encerrado':(m.status==='IN_PLAY'?'● Ao vivo no momento'+liveMin:'Aguardando início')}</span>
     <div class="modal-score">
@@ -633,7 +641,7 @@ function openMatch(id){
 function renderPerfis(){
   if(!PROFILES.length){ $("#content").innerHTML=`<div class="empty">Nenhum palpiteiro cadastrado.</div>`; return; }
   const cards=PROFILES.map(p=>{
-    const s=statsFor(p,"ALL"); const mine=me()&&me().id===p.id;
+    const s=statsFor(p); const mine=me()&&me().id===p.id;
     
     const badges = `
       <div class="badge-row" style="margin-top:8px">
@@ -653,17 +661,19 @@ function renderPerfis(){
 /* ---- Detalhe Palpiteiro (modal) ---- */
 function openProfile(id){
   const p=profileById(id); if(!p) return;
-  const s=statsFor(p,"ALL");
+  const s=statsFor(p);
   const list=MATCHES.map(m=>{
-    const pk=p.picks?.[m.id]; const sc=scorePick(pk,m); const has=!!(pk&&pk.home!=null);
+    const pk=p.picks?.[m.id]; const has=!!(pk&&pk.home!=null);
     const fin=m.status==="FINISHED"&&m.homeScore!=null;
-    const tag=sc===null?`<span class="ptag pending">··</span>`:`<span class="ptag ${tagClass(sc)}">${fmtPts(sc)} pts</span>`;
+    const isLive=m.status==="IN_PLAY"&&m.homeScore!=null;
+    const sc=effScore(pk,m);
+    const tag=sc===null?`<span class="ptag pending">··</span>`:`<span class="ptag ${tagClass(sc)}${isLive?' parcial':''}">${fmtPts(sc)} pts</span>`;
     return `<div class="pick-line">
       <div class="pl-who"><span class="tn" style="font-size:15px; font-weight:600;"><img class="pl-flag" src="${esc(m.homeCrest||'')}" alt="" onerror="this.style.display='none'">${esc(m.home)} <span class="vs" style="font-size:14px">×</span> ${esc(m.away)}<img class="pl-flag" src="${esc(m.awayCrest||'')}" alt="" onerror="this.style.display='none'"></span></div>
       <div class="pl-right">
         <div style="display:flex; flex-direction:column; align-items:flex-end">
           <span class="pscore${has?'':' none'}">${has?`${pk.home} – ${pk.away}`:"—"}</span>
-          ${fin?`<span style="color:var(--muted); font-size:13px; font-weight:500;">(Real: ${m.homeScore}–${m.awayScore})</span>`:""}
+          ${(fin||isLive)?`<span style="color:var(--muted); font-size:13px; font-weight:500;">(${isLive?'Parcial':'Real'}: ${m.homeScore}–${m.awayScore})</span>`:""}
         </div>
         ${tag}</div></div>`;
   }).join("");
@@ -684,14 +694,16 @@ function openProfile(id){
 /* ---- Meus palpites ---- */
 function renderMeus(){
   const p=me(); if(!p){ VIEW="ranking"; buildTabs(); render(); return; }
-  const s=statsFor(p,"ALL");
+  const s=statsFor(p);
   const list=MATCHES.map(m=>{
-    const pk=p.picks?.[m.id]; const sc=scorePick(pk,m); const has=!!(pk&&pk.home!=null);
+    const pk=p.picks?.[m.id]; const has=!!(pk&&pk.home!=null);
     const fin=m.status==="FINISHED"&&m.homeScore!=null;
-    const tag=sc===null?`<span class="ptag pending">··</span>`:`<span class="ptag ${tagClass(sc)}">${fmtPts(sc)} pts</span>`;
+    const isLive=m.status==="IN_PLAY"&&m.homeScore!=null;
+    const sc=effScore(pk,m);
+    const tag=sc===null?`<span class="ptag pending">··</span>`:`<span class="ptag ${tagClass(sc)}${isLive?' parcial':''}">${fmtPts(sc)} pts</span>`;
     return `<div class="pick-line">
       <div class="pl-who"><span class="tn" style="font-size:15px; font-weight:600;"><img class="pl-flag" src="${esc(m.homeCrest||'')}" alt="" onerror="this.style.display='none'">${esc(m.home)} <span class="vs" style="font-size:14px">×</span> ${esc(m.away)}<img class="pl-flag" src="${esc(m.awayCrest||'')}" alt="" onerror="this.style.display='none'"></span>
-        <span class="status" style="font-size:10px; padding:2px 6px;">${fin?m.homeScore+"–"+m.awayScore:"R"+m.round}</span></div>
+        <span class="status" style="font-size:10px; padding:2px 6px;">${(fin||isLive)?m.homeScore+"–"+m.awayScore:"R"+m.round}</span></div>
       <div class="pl-right"><span class="pscore${has?'':' none'}">${has?`${pk.home} – ${pk.away}`:"—"}</span>${tag}</div></div>`;
   }).join("");
   $("#content").innerHTML=`
