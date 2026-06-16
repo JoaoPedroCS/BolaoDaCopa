@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-15T08:51:22.007Z",
+  "updatedAt": "2026-06-16T02:52:17.258Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -167,9 +167,9 @@
       "away": "Cape Verde Islands",
       "homeCrest": "https://crests.football-data.org/760.svg",
       "awayCrest": "https://crests.football-data.org/cape_verde.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-037",
@@ -180,9 +180,9 @@
       "away": "Egypt",
       "homeCrest": "https://crests.football-data.org/805.svg",
       "awayCrest": "https://crests.football-data.org/825.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 1
     },
     {
       "id": "wc-044",
@@ -193,9 +193,9 @@
       "away": "Uruguay",
       "homeCrest": "https://crests.football-data.org/saudi_arabia.svg",
       "awayCrest": "https://crests.football-data.org/758.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 1
     },
     {
       "id": "wc-038",
@@ -206,9 +206,9 @@
       "away": "New Zealand",
       "homeCrest": "https://crests.football-data.org/iran.svg",
       "awayCrest": "https://crests.football-data.org/783.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 2
     },
     {
       "id": "wc-049",
