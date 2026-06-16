@@ -5,8 +5,6 @@ name: Atualizar semente (matches.json)
 # quando algo estrutural mudar (ex.: times definidos no chaveamento, escudos novos).
 # Pra religar a atualizacao automatica, descomente o bloco schedule abaixo.
 on:
-  # schedule:
-  #   - cron: "*/30 * * * *"
   workflow_dispatch:
 
 permissions:
