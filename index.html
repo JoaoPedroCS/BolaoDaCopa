@@ -55,13 +55,23 @@
   a { color: var(--signal); text-decoration: none; font-weight: 600; }
 
   /* Cabeçalho */
-  header { 
-    border-radius: var(--radius); 
-    background: linear-gradient(135deg, #005A25 0%, #007A33 100%); 
-    padding: 24px 20px; 
+  header {
+    position: relative;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, #005A25 0%, #007A33 100%);
+    padding: 24px 20px;
     color: white;
     box-shadow: 0 4px 12px rgba(0, 122, 51, 0.15);
   }
+  .toplink {
+    position: absolute; top: 16px; right: 16px;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.16); color: white;
+    border: 1px solid rgba(255,255,255,0.4); border-radius: 12px;
+    padding: 8px 14px; font-size: 13px; font-weight: 700; text-decoration: none;
+    transition: 0.2s; backdrop-filter: blur(2px);
+  }
+  .toplink:hover { background: rgba(255,255,255,0.3); }
   .eyebrow { font-size: 13px; font-weight: 600; text-transform: uppercase; color: #A7F3D0; display: flex; gap: 8px; align-items: center; }
   .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: #FDE047; box-shadow: 0 0 8px #FDE047; }
   h1 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: clamp(48px, 12vw, 84px); line-height: 0.9; margin-top: 8px; letter-spacing: 1px; }
@@ -241,6 +251,7 @@
 <body>
 <div class="wrap">
   <header>
+    <a class="toplink" href="evolucao.html">Evolução ↗</a>
     <div class="eyebrow"><span class="dot"></span> Fase de grupos · Copa 2026</div>
     <h1>Bolão <span class="pop">da Copa</span></h1>
     <div class="sub" id="syncInfo">Carregando dados...</div>

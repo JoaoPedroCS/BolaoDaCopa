@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light" />
+<meta name="supported-color-schemes" content="light" />
+<title>Evolução dos Pontos · Bolão da Copa 2026</title>
+<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="apple-touch-icon" href="assets/icon-192.png" />
+<link rel="manifest" href="site.webmanifest" />
+<meta name="theme-color" content="#007A33" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    color-scheme: light only;
+    --pitch:#F4F7F6; --panel:#FFFFFF; --line:#E2E8F0; --chalk:#1A202C; --muted:#4A5568; --signal:#007A33;
+    --radius:16px; --font-base:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background-color:var(--pitch);color:var(--chalk);font-family:var(--font-base);}
+  .wrap{max-width:980px;margin:0 auto;padding:16px;}
+  header{
+    position:relative;border-radius:var(--radius);
+    background:linear-gradient(135deg,#005A25 0%,#007A33 100%);
+    padding:24px 20px;color:white;box-shadow:0 4px 12px rgba(0,122,51,0.15);
+  }
+  .eyebrow{font-size:13px;font-weight:600;text-transform:uppercase;color:#A7F3D0;}
+  h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(38px,9vw,64px);line-height:0.9;margin:8px 0 0;letter-spacing:1px;}
+  h1 .pop{color:#FDE047;}
+  .sub{color:#D1FAE5;font-size:14px;margin-top:10px;}
+  .back{
+    display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;
+    background:rgba(255,255,255,0.14);color:white;border:1px solid rgba(255,255,255,0.4);
+    padding:9px 16px;border-radius:12px;font-weight:600;font-size:14px;text-decoration:none;transition:.2s;
+  }
+  .back:hover{background:rgba(255,255,255,0.26);}
+  main{margin-top:20px;}
+  .chart-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  }
+  .chart-box{position:relative;width:100%;height:62vh;min-height:360px;}
+  .note{color:var(--muted);font-size:13px;margin:14px 4px 0;line-height:1.5;}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:16px;}
+  .err{color:#B91C1C;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="index.html">← Voltar ao Bolão</a>
+    <div class="eyebrow">Fase de grupos · Copa 2026</div>
+    <h1>Evolução <span class="pop">dos Pontos</span></h1>
+    <div class="sub" id="info">Carregando dados…</div>
+  </header>
+
+  <main>
+    <div class="chart-card">
+      <div class="chart-box"><canvas id="chart"></canvas></div>
+    </div>
+    <p class="note" id="note"></p>
+  </main>
+</div>
+
+<script>
+/* Mesma fonte de dados do index.html (Worker para os jogos, JsonBin para os palpites). */
+const CONFIG = {
+  jsonbin: { enabled:true, binId:"6a2c15e9da38895dfeb5363d", accessKey:"$2a$10$sB4a4hNUpA93mz5lq7f27eSS.7mjLMuuMSMF8UcThQdIgBtuVyoSG" },
+  matchesUrl: "https://bolao-jogos.joaohulck.workers.dev/"
+};
+
+/* Mesma regra de pontuação do bolão. */
+function pointsFor(pick,ah,aa){
+  if(!pick||pick.home==null||pick.away==null) return 0;
+  const ph=+pick.home,pa=+pick.away;
+  if(ph===ah&&pa===aa) return 5;
+  const ps=Math.sign(ph-pa),as=Math.sign(ah-aa);
+  if(ps!==as) return 0;
+  if(as===0) return 3;
+  return 2.5;
+}
+const fmtPts=(n)=>Number.isInteger(n)?String(n):String(n).replace(".",",");
+
+/* 10 cores bem distintas (uma por palpiteiro). */
+const PALETTE=["#e6194B","#3cb44b","#4363d8","#f58231","#911eb4","#008080","#f032e6","#9A6324","#808000","#000075"];
+
+async function loadMatches(){
+  const base=CONFIG.matchesUrl||"data/matches.json";
+  const src=base+(base.includes("?")?"&":"?")+"t="+Date.now();
+  const r=await fetch(src); if(!r.ok) throw new Error("Falha ao carregar os jogos");
+  const d=await r.json();
+  return (d.matches||[]);
+}
+async function loadProfiles(){
+  if(CONFIG.jsonbin.enabled&&CONFIG.jsonbin.binId){
+    const h={}; if(CONFIG.jsonbin.accessKey) h["X-Access-Key"]=CONFIG.jsonbin.accessKey;
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}/latest`,{headers:h});
+    if(!r.ok) throw new Error("Falha ao carregar os palpites (JsonBin "+r.status+")");
+    return ((await r.json()).record||{}).profiles||[];
+  }
+  const r=await fetch(`data/predictions.json?t=${Date.now()}`); if(!r.ok) throw new Error("Falha ao carregar os palpites");
+  return ((await r.json()).profiles||[]);
+}
+
+let CHART=null;
+function build(MATCHES, PROFILES){
+  const info=document.getElementById("info");
+  const note=document.getElementById("note");
+
+  const finished=MATCHES
+    .filter(m=>m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null)
+    .sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+  const live=MATCHES.filter(m=>m.status==="IN_PLAY"&&m.homeScore!=null&&m.awayScore!=null);
+
+  if(!PROFILES.length){ document.querySelector(".chart-card").innerHTML='<div class="empty">Nenhum palpiteiro cadastrado.</div>'; info.textContent=""; return; }
+  if(!finished.length && !live.length){
+    document.querySelector(".chart-card").innerHTML='<div class="empty">Os jogos ainda não começaram.<br>O gráfico aparece conforme os resultados saem.</div>';
+    info.textContent="Aguardando o primeiro resultado.";
+    return;
+  }
+
+  // Eixo X: "Início" + 1 ponto por jogo encerrado (+ "Agora" se houver jogo ao vivo).
+  const labels=["Início"];
+  const desc=["Antes do 1º jogo"];
+  for(const m of finished){
+    labels.push("J"+labels.length);
+    desc.push(`${m.home} ${m.homeScore}×${m.awayScore} ${m.away}`);
+  }
+  const includeLive=live.length>0;
+  if(includeLive){ labels.push("Agora"); desc.push("Parcial ao vivo ("+live.length+" jogo"+(live.length>1?"s":"")+" em andamento)"); }
+
+  // Série acumulada de cada palpiteiro.
+  const series=PROFILES.map(p=>{
+    let acc=0; const data=[0];
+    for(const m of finished){ acc+=pointsFor(p.picks?.[m.id], +m.homeScore, +m.awayScore); data.push(acc); }
+    if(includeLive){ let a=acc; for(const m of live){ a+=pointsFor(p.picks?.[m.id], +m.homeScore, +m.awayScore); } data.push(a); }
+    return {id:p.id, name:p.name, data, final:data[data.length-1]};
+  });
+  // Líder no topo da legenda.
+  series.sort((a,b)=> b.final-a.final || a.name.localeCompare(b.name,"pt"));
+
+  const meId=localStorage.getItem("bolao_identity");
+  const datasets=series.map((s,i)=>{
+    const mine=s.id===meId;
+    const color=PALETTE[i%PALETTE.length];
+    return {
+      label:(mine?"★ ":"")+s.name,
+      data:s.data,
+      borderColor:color, backgroundColor:color,
+      borderWidth: mine?4.5:2,
+      pointRadius:0, pointHoverRadius:5, pointHitRadius:8,
+      tension:0.22, order: mine?0:1
+    };
+  });
+
+  if(CHART) CHART.destroy();
+  CHART=new Chart(document.getElementById("chart"), {
+    type:"line",
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:"nearest", intersect:false },
+      plugins:{
+        legend:{ position:"top", labels:{ usePointStyle:true, boxWidth:8, font:{ size:12 } } },
+        tooltip:{
+          callbacks:{
+            title:(items)=> desc[items[0].dataIndex] || "",
+            label:(it)=> `${it.dataset.label.replace("★ ","")}: ${fmtPts(it.parsed.y)} pts`
+          }
+        }
+      },
+      scales:{
+        y:{ beginAtZero:true, title:{ display:true, text:"Pontos acumulados" }, ticks:{ precision:0 } },
+        x:{ title:{ display:true, text:"Jogos (em ordem)" }, ticks:{ autoSkip:true, maxTicksLimit:14 } }
+      }
+    }
+  });
+
+  info.textContent = `${PROFILES.length} palpiteiros · ${finished.length} jogos encerrados`+(includeLive?` · ${live.length} ao vivo`:"");
+  note.innerHTML = "Cada linha é um palpiteiro, com uma cor fixa. O eixo mostra os pontos acumulados jogo a jogo, em ordem cronológica — passe o dedo/mouse para ver o placar de cada jogo. "
+    + (meId?"Sua linha aparece <b>mais grossa</b> e marcada com ★. ":"")
+    + "Toque num nome na legenda para esconder/mostrar a linha."
+    + (includeLive?" O ponto <b>“Agora”</b> inclui o parcial dos jogos ao vivo e muda durante as partidas.":"");
+}
+
+(async function(){
+  try{
+    const [MATCHES, PROFILES] = await Promise.all([loadMatches(), loadProfiles()]);
+    build(MATCHES, PROFILES);
+  }catch(e){
+    document.getElementById("info").innerHTML = '<span class="err">'+(e&&e.message||e)+'</span>';
+    document.querySelector(".chart-card").innerHTML = '<div class="empty err">Não foi possível carregar os dados.<br>Tente recarregar a página.</div>';
+  }
+})();
+</script>
+</body>
+</html>
