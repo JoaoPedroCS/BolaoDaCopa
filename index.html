@@ -232,6 +232,58 @@
   footer .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
   footer .legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: var(--muted); }
 
+  /* Tabela de Classificação (Fase de Grupos) */
+  .st-note { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .st-note .st-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--signal); flex: none; }
+  .standings { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+  .standings th, .standings td { padding: 11px 4px; text-align: center; font-size: 14px; }
+  .standings thead th { background: var(--panel-2); color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .standings tbody tr { border-top: 1px solid var(--line); }
+  .standings .st-pos { width: 34px; color: var(--muted); font-weight: 700; }
+  .standings .st-pts { width: 42px; font-weight: 700; color: var(--signal); }
+  .standings .st-sg { width: 46px; color: var(--muted); }
+  .standings th:nth-child(4), .standings th:nth-child(5), .standings th:nth-child(6),
+  .standings td:nth-child(4), .standings td:nth-child(5), .standings td:nth-child(6) { width: 30px; }
+  .standings .st-team { text-align: left; overflow: hidden; }
+  .standings .st-team-in { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .standings .st-team-in span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .standings .st-flag { width: 24px; height: 17px; object-fit: cover; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); flex: none; }
+  .standings tr.qual td { background: #F0FDF4; }
+  .standings tr.qual td.st-pos { color: var(--signal); box-shadow: inset 3px 0 0 var(--signal); }
+
+  /* Mata-mata (chaveamento) */
+  .ko-note { font-size: 13px; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; line-height: 1.45; }
+  .ko-note b { color: var(--chalk); }
+  .ko-champ { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #005A25 0%, #007A33 100%); color: #fff; border-radius: var(--radius); padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,122,51,0.18); }
+  .ko-champ .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: #A7F3D0; font-weight: 700; }
+  .ko-champ .nm { font-family: 'Bebas Neue', sans-serif; font-size: 30px; line-height: 1; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ko-champ img { width: 44px; height: 31px; object-fit: cover; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); flex: none; }
+  .ko-round { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; color: var(--chalk); margin: 28px 0 12px; display: flex; align-items: center; gap: 12px; }
+  .ko-round::after { content: ""; flex: 1; height: 2px; background: var(--line); }
+  .ko-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .ko-match { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.03); }
+  .ko-pair { display: flex; flex-direction: column; }
+  .ko-team { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: none; border-top: 1px solid var(--line); background: var(--panel); color: var(--chalk); font-family: var(--font-base); font-size: 15px; font-weight: 600; padding: 13px 14px; cursor: pointer; transition: 0.15s; }
+  .ko-team:first-child { border-top: none; }
+  .ko-team img { width: 26px; height: 19px; object-fit: cover; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); flex: none; }
+  .ko-team span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ko-team:not(:disabled):hover { background: var(--panel-2); }
+  .ko-team.sel { background: #F0FDF4; color: var(--signal); box-shadow: inset 4px 0 0 var(--signal); }
+  .ko-team.sel:not(:disabled):hover { background: #E6F4EA; }
+  .ko-team .ko-check { font-weight: 800; color: var(--signal); flex: none; }
+  .ko-team:disabled { cursor: default; }
+  .ko-team.empty { color: var(--muted); font-weight: 500; font-style: italic; border-top: 1px solid var(--line); padding: 13px 14px; }
+  .ko-team.empty:first-child { border-top: none; }
+  .ko-champs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 8px; }
+  .ko-champ-card { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--panel); min-width: 0; }
+  .ko-champ-card .av { width: 34px; height: 34px; flex: none; }
+  .ko-save { position: sticky; bottom: 16px; margin-top: 20px; }
+  .ko-save .btn { width: 100%; padding: 16px; font-size: 16px; box-shadow: 0 6px 20px rgba(0,122,51,0.28); }
+
+  @media (min-width: 600px) {
+    .ko-list { grid-template-columns: 1fr 1fr; gap: 12px; }
+  }
+
   .hidden { display: none !important; }
 
   @media (min-width: 600px) {
@@ -511,7 +563,7 @@ const groupsAvailable=()=>[...new Set(MATCHES.map(m=>m.group))].sort();
 
 /* ============================================================ TABS */
 function buildTabs(){
-  const base=[["ranking","Ranking"],["jogos","Jogos"],["perfis","Palpiteiros"]];
+  const base=[["ranking","Ranking"],["jogos","Jogos"],["tabela","Tabela"],["matamata","Mata-mata"],["perfis","Palpiteiros"]];
   if(me()) base.push(["meus","Meus Palpites"]);
   if(!base.find(t=>t[0]===VIEW)) VIEW="ranking";
   $("#tabs").innerHTML=base.map(([v,l])=>`<button class="tab" role="tab" data-view="${v}" aria-selected="${VIEW===v}">${l}</button>`).join("");
@@ -522,6 +574,8 @@ function buildTabs(){
 function render(){
   if(VIEW==="ranking") renderRanking();
   else if(VIEW==="jogos") renderJogos();
+  else if(VIEW==="tabela") renderTabela();
+  else if(VIEW==="matamata") renderMataMata();
   else if(VIEW==="perfis") renderPerfis();
   else if(VIEW==="meus") renderMeus();
 }
@@ -590,6 +644,164 @@ function matchCard(m){
     ${show?"":`<div class="kickoff">${esc(kickoff(m))}</div>`}
     <div class="cardfoot"><span>${nPicks} palpite${nPicks===1?"":"s"} registrados</span><span class="go">Ver palpites →</span></div>
   </div>`;
+}
+
+/* ---- Tabela / Classificação dos grupos ---- */
+// Monta a classificação de cada grupo somando SÓ jogos encerrados (FINISHED).
+function computeStandings(){
+  const groups={}, crest={};
+  for(const m of MATCHES){
+    const g=m.group; if(g==null) continue;
+    (groups[g]||(groups[g]={}));
+    for(const name of [m.home,m.away]){
+      if(name==null) continue;
+      if(!groups[g][name]) groups[g][name]={name,pj:0,v:0,e:0,d:0,gp:0,gc:0,pts:0};
+    }
+    if(m.homeCrest) crest[m.home]=m.homeCrest;
+    if(m.awayCrest) crest[m.away]=m.awayCrest;
+    if(m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null){
+      const h=groups[g][m.home], a=groups[g][m.away], hs=+m.homeScore, as=+m.awayScore;
+      h.pj++; a.pj++; h.gp+=hs; h.gc+=as; a.gp+=as; a.gc+=hs;
+      if(hs>as){ h.v++; h.pts+=3; a.d++; }
+      else if(hs<as){ a.v++; a.pts+=3; h.d++; }
+      else { h.e++; a.e++; h.pts++; a.pts++; }
+    }
+  }
+  return Object.keys(groups).sort().map(g=>{
+    const teams=Object.values(groups[g]).map(t=>({...t,sg:t.gp-t.gc,crest:crest[t.name]||""}));
+    // Desempate: pontos > saldo > gols pró > nome.
+    teams.sort((x,y)=> y.pts-x.pts || y.sg-x.sg || y.gp-x.gp || x.name.localeCompare(y.name,"pt"));
+    return {group:g,teams};
+  });
+}
+function renderTabela(){
+  const standings=computeStandings();
+  if(!standings.length){ $("#content").innerHTML=`<div class="empty">Sem grupos para exibir.</div>`; return; }
+  const note=`<div class="st-note"><span class="st-dot"></span> Verde = 2 primeiros de cada grupo · considera apenas jogos encerrados</div>`;
+  const blocks=standings.map(({group,teams})=>{
+    const rows=teams.map((t,i)=>`<tr class="${i<2?'qual':''}">
+        <td class="st-pos">${i+1}</td>
+        <td class="st-team"><div class="st-team-in"><img class="st-flag" src="${esc(t.crest)}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span></div></td>
+        <td class="st-pts">${t.pts}</td>
+        <td>${t.v}</td>
+        <td>${t.e}</td>
+        <td>${t.d}</td>
+        <td class="st-sg">${t.sg>0?'+':''}${t.sg}</td>
+      </tr>`).join("");
+    return `<div class="roundhead" style="margin:24px 0 12px">Grupo ${esc(group)}</div>
+      <table class="standings">
+        <thead><tr><th class="st-pos">#</th><th class="st-team">Time</th><th>Pts</th><th>V</th><th>E</th><th>D</th><th class="st-sg">SG</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }).join("");
+  $("#content").innerHTML=note+blocks;
+}
+
+/* ============================================================ MATA-MATA (chaveamento) */
+let R32T=null;   // tabela do Anexo C (495 combinações), carregada sob demanda
+// De onde vem cada confronto a partir dos vencedores anteriores (estrutura oficial FIFA):
+const KO_FEED={
+  89:[74,77], 90:[73,75], 91:[76,78], 92:[79,80],
+  93:[83,84], 94:[81,82], 95:[86,88], 96:[85,87],
+  97:[89,90], 98:[93,94], 99:[91,92], 100:[95,96],
+  101:[97,98], 102:[99,100], 104:[101,102]
+};
+const KO_ROUNDS=[
+  ["16-avos de final",[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88]],
+  ["Oitavas de final",[89,90,91,92,93,94,95,96]],
+  ["Quartas de final",[97,98,99,100]],
+  ["Semifinais",[101,102]],
+  ["Final",[104]]
+];
+async function loadR32Thirds(){
+  if(R32T) return R32T;
+  const r=await fetch("data/r32-thirds.json?t="+Date.now());
+  if(!r.ok) throw new Error("r32-thirds "+r.status);
+  R32T=await r.json(); return R32T;
+}
+function crestMap(){ const c={}; for(const m of MATCHES){ if(m.homeCrest)c[m.home]=m.homeCrest; if(m.awayCrest)c[m.away]=m.awayCrest; } return c; }
+
+// Monta os 16 confrontos do R32 pela classificação ATUAL: 1º e 2º de cada grupo +
+// os 8 melhores 3º lugares (regras FIFA), com a alocação dos 3º vinda do Anexo C.
+function koSeeds(){
+  const st=computeStandings();
+  const byG={}, thirds=[];
+  for(const {group,teams} of st){ byG[group]=teams; if(teams[2]) thirds.push({...teams[2],group}); }
+  thirds.sort((x,y)=> y.pts-x.pts || y.sg-x.sg || y.gp-x.gp || x.name.localeCompare(y.name,"pt") || x.group.localeCompare(y.group));
+  const qualGroups=thirds.slice(0,8).map(t=>t.group).sort();
+  const assign=R32T?R32T[qualGroups.join("")]:null;   // 8 letras na ordem das colunas [A,B,D,E,G,I,K,L]
+  const cols=["A","B","D","E","G","I","K","L"], slotMatch={A:79,B:85,D:81,E:74,G:82,I:77,K:87,L:80};
+  const thirdGroupFor={};
+  if(assign) cols.forEach((c,i)=> thirdGroupFor[slotMatch[c]]=assign[i]);
+  const cr=crestMap(), T=(name)=> name?{name,crest:cr[name]||""}:null;
+  const w=(g)=>T(byG[g]&&byG[g][0]&&byG[g][0].name), ru=(g)=>T(byG[g]&&byG[g][1]&&byG[g][1].name), th=(g)=>T(byG[g]&&byG[g][2]&&byG[g][2].name);
+  const tm=(slot)=> thirdGroupFor[slot]?th(thirdGroupFor[slot]):null;   // 3º do grupo definido pelo Anexo C
+  return {
+    73:[ru("A"),ru("B")], 74:[w("E"),tm(74)], 75:[w("F"),ru("C")], 76:[w("C"),ru("F")],
+    77:[w("I"),tm(77)], 78:[ru("E"),ru("I")], 79:[w("A"),tm(79)], 80:[w("L"),tm(80)],
+    81:[w("D"),tm(81)], 82:[w("G"),tm(82)], 83:[ru("K"),ru("L")], 84:[w("H"),ru("J")],
+    85:[w("B"),tm(85)], 86:[w("J"),ru("H")], 87:[w("K"),tm(87)], 88:[ru("D"),ru("G")]
+  };
+}
+// Times de TODOS os jogos: R32 vem dos seeds; fases seguintes vêm dos PALPITES do usuário.
+function koResolveAll(picks){
+  const M={...koSeeds()}, cr=crestMap(), T=(name)=> name?{name,crest:cr[name]||""}:null;
+  for(const mid of [89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]){
+    const f=KO_FEED[mid];
+    M[mid]=[T(picks&&picks[f[0]]), T(picks&&picks[f[1]])];
+  }
+  return M;
+}
+function koTeamSlot(mid,t,pick,editable){
+  if(!t) return `<div class="ko-team empty">A definir</div>`;
+  const sel=pick===t.name;
+  return `<button class="ko-team${sel?' sel':''}" data-mid="${mid}" data-team="${esc(t.name)}"${editable?'':' disabled'}>
+    <img src="${esc(t.crest||'')}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span>${sel?'<span class="ko-check">✓</span>':''}</button>`;
+}
+async function renderMataMata(){
+  if(!R32T){
+    $("#content").innerHTML=`<div class="empty">Carregando chaveamento…</div>`;
+    try{ await loadR32Thirds(); }catch(e){ $("#content").innerHTML=`<div class="empty">Não consegui carregar o chaveamento. Tente recarregar a página.</div>`; return; }
+    if(VIEW!=="matamata") return;   // usuário trocou de aba enquanto carregava
+  }
+  const p=me(), picks=p?(p.ko||{}):{}, editable=!!p, cr=crestMap();
+  const M=koResolveAll(picks);
+
+  // Resumo: quem cada palpiteiro crava campeão
+  const champs=PROFILES.filter(x=>x.ko&&x.ko[104]);
+  const champsHtml = champs.length?`<div class="ko-round" style="margin-top:0">Quem cada um crava campeão</div>
+    <div class="ko-champs-grid">${champs.map(x=>`<div class="ko-champ-card">${avatar(x)}<div style="min-width:0"><div style="font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.name)}</div><div style="display:flex;align-items:center;gap:6px;font-weight:700;min-width:0"><img src="${esc(cr[x.ko[104]]||'')}" alt="" style="width:22px;height:16px;object-fit:cover;border-radius:2px;flex:none" onerror="this.style.display='none'"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.ko[104])}</span></div></div></div>`).join("")}</div>`:"";
+
+  let head;
+  if(!p){
+    head=`<div class="ko-note">Entre com seu perfil (botão <b>Trocar Perfil</b> no topo) para cravar seu mata-mata. Abaixo está o chaveamento projetado pela <b>classificação atual</b>.</div>`;
+  }else{
+    const champName=picks[104]||null;
+    head=`<div class="ko-champ">
+      <div style="flex:1;min-width:0"><div class="lbl">Seu campeão</div><div class="nm">${champName?esc(champName):'— defina na Final —'}</div></div>
+      ${champName?`<img src="${esc(cr[champName]||'')}" alt="" onerror="this.style.display='none'">`:''}</div>
+    <div class="ko-note">Toque no time que você acha que avança — o vencedor sobe pra próxima fase. Os 16-avos já vêm preenchidos pela <b>classificação atual</b> (regras da FIFA: 1º, 2º e os 8 melhores 3º lugares, com o chaveamento do Anexo C). Os palpites ficam <b>fixos</b> mesmo se os classificados mudarem. Não vale pontos — é só pra cravar quem vai longe.</div>`;
+  }
+
+  const rounds=KO_ROUNDS.map(([label,ids])=>{
+    const cards=ids.map(mid=>{
+      const a=M[mid][0], b=M[mid][1], pick=picks[mid]||null, can=editable&&!!a&&!!b;
+      return `<div class="ko-match"><div class="ko-pair">${koTeamSlot(mid,a,pick,can)}${koTeamSlot(mid,b,pick,can)}</div></div>`;
+    }).join("");
+    return `<div class="ko-round">${label}</div><div class="ko-list">${cards}</div>`;
+  }).join("");
+
+  $("#content").innerHTML = champsHtml + head + rounds + (p?`<div class="ko-save"><button class="btn primary" id="koSaveBtn">Salvar meu mata-mata</button></div>`:"");
+
+  $$(".ko-team[data-mid]").forEach(btn=> btn.onclick=()=>{
+    const pp=me(); if(!pp) return;
+    const mid=+btn.dataset.mid, team=btn.dataset.team;
+    pp.ko=pp.ko||{};
+    if(pp.ko[mid]===team) delete pp.ko[mid]; else pp.ko[mid]=team;
+    PROFILES=PROFILES.map(x=>x.id===pp.id?pp:x);
+    DIRTY=true; renderMataMata();
+  });
+  if($("#koSaveBtn")) $("#koSaveBtn").onclick=()=>save();
 }
 
 /* ---- Detalhe do jogo (modal) ---- */
