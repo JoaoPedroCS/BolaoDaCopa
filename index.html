@@ -8,301 +8,464 @@
 <title>Bolão da Copa 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <link rel="icon" type="image/png" href="assets/favicon.png" />
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png" />
 <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png" />
 <link rel="apple-touch-icon" href="assets/icon-192.png" />
 <link rel="manifest" href="site.webmanifest" />
-<meta name="theme-color" content="#007A33" />
+<meta name="theme-color" content="#0A0E17" />
 
 <style>
+
   :root {
-    /* Trava o site em tema claro: evita o "dark mode forçado" de alguns navegadores/Android. */
-    color-scheme: light only;
-    /* Paleta Tema Copa - Acessível e Vibrante */
-    --pitch: #F4F7F6;
-    --panel: #FFFFFF; 
-    --panel-2: #F8FAF9; 
-    --line: #E2E8F0;
-    --chalk: #1A202C; 
-    --muted: #4A5568; 
-    --signal: #007A33; /* Verde Forte */
-    --live: #E53E3E; /* Vermelho Vivo */
-    
-    /* Cores das Pontuações (Bolinhas) */
-    --p5: #007A33; /* Exato - Verde */
-    --p3: #3182CE; /* Empate - Azul */
-    --p25: #D69E2E; /* Vencedor - Dourado */
-    --p0: #ff7070; /* Erro - Cinza Claro */
-    
-    --radius: 16px;
-    --font-base: 'Inter', system-ui, sans-serif;
+    color-scheme: dark only;
+    /* ===== MATCHDAY — placar noturno sob refletores ===== */
+    --pitch: #0A0E17;
+    --panel: #131B28;
+    --panel-2: #1A2434;
+    --line: #2A3645;
+    --line-soft: #1E2837;
+    --chalk: #EAF0F7;
+    --muted: #8B99AC;
+    --signal: #BFF234;        /* verde-limão elétrico */
+    --signal-dark: #A7DB1E;
+    --signal-deep: #0E1A06;
+    --live: #FF4D5E;          /* coral ao vivo */
+    --gold: #FFD24A;
+    --silver: #C7D2DD;
+    --bronze: #E0884A;
+
+    /* Pontuações */
+    --p5: #1FB463;   /* exato — verde */
+    --p3: #3B82F6;   /* empate — azul */
+    --p25: #E0A410;  /* vencedor — âmbar */
+    --p0: #F0566A;   /* erro — vermelho */
+
+    --radius: 18px;
+    --radius-sm: 12px;
+    --font-base: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Anton', 'Inter', sans-serif;
+    --shadow-card: 0 2px 4px rgba(0,0,0,.35), 0 14px 36px rgba(0,0,0,.40);
+    --shadow-pop: 0 28px 70px rgba(0,0,0,.62);
   }
-  
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { -webkit-text-size-adjust: 100%; font-size: 16px; }
-  body { 
+  body {
     background-color: var(--pitch);
-    color: var(--chalk); 
-    font-family: var(--font-base); 
-    line-height: 1.5; 
-    min-height: 100vh; 
+    color: var(--chalk);
+    font-family: var(--font-base);
+    line-height: 1.5;
+    min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
-  
-  .wrap { max-width: 880px; margin: 0 auto; padding: 16px 16px 100px; }
-  a { color: var(--signal); text-decoration: none; font-weight: 600; }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(1100px circle at 80% -12%, rgba(191,242,52,.10), transparent 50%),
+      radial-gradient(900px circle at 2% 6%, rgba(45,170,220,.09), transparent 48%),
+      radial-gradient(1300px circle at 50% 122%, rgba(191,242,52,.05), transparent 56%);
+  }
 
-  /* Cabeçalho */
+  .wrap { position: relative; z-index: 1; max-width: 880px; margin: 0 auto; padding: 18px 16px 110px; }
+  a { color: var(--signal); text-decoration: none; font-weight: 700; }
+
+  /* ===== Cabeçalho — marquise de placar ===== */
   header {
-    position: relative;
-    border-radius: var(--radius);
-    background: linear-gradient(135deg, #005A25 0%, #007A33 100%);
-    padding: 24px 20px;
-    color: white;
-    box-shadow: 0 4px 12px rgba(0, 122, 51, 0.15);
+    position: relative; overflow: hidden; isolation: isolate;
+    border-radius: 22px;
+    background: linear-gradient(155deg, #18233505 0%, #0D1420 72%), linear-gradient(155deg, #1A2740 0%, #0C1119 70%);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-top: 3px solid var(--signal);
+    padding: 30px 26px 24px; color: #fff;
+    box-shadow: 0 24px 56px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .header-glow {
+    position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(440px circle at 93% -22%, rgba(191,242,52,.30), transparent 60%),
+      radial-gradient(380px circle at -4% 124%, rgba(45,170,220,.20), transparent 60%);
+  }
+  .header-stripes {
+    position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .7;
+    background: repeating-linear-gradient(90deg, transparent 0 76px, rgba(255,255,255,.028) 76px 78px);
+    -webkit-mask-image: radial-gradient(130% 120% at 100% 0%, #000 10%, transparent 72%);
+            mask-image: radial-gradient(130% 120% at 100% 0%, #000 10%, transparent 72%);
   }
   .toplink {
-    position: absolute; top: 16px; right: 16px;
+    position: absolute; top: 18px; right: 18px;
     display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.16); color: white;
-    border: 1px solid rgba(255,255,255,0.4); border-radius: 12px;
-    padding: 8px 14px; font-size: 13px; font-weight: 700; text-decoration: none;
-    transition: 0.2s; backdrop-filter: blur(2px);
+    background: rgba(255,255,255,0.08); color: #fff;
+    border: 1px solid rgba(255,255,255,0.22); border-radius: 999px;
+    padding: 9px 15px; font-size: 12.5px; font-weight: 700; letter-spacing: .2px; text-decoration: none;
+    transition: .18s cubic-bezier(.2,.8,.2,1); backdrop-filter: blur(4px);
   }
-  .toplink:hover { background: rgba(255,255,255,0.3); }
-  .eyebrow { font-size: 13px; font-weight: 600; text-transform: uppercase; color: #A7F3D0; display: flex; gap: 8px; align-items: center; }
-  .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: #FDE047; box-shadow: 0 0 8px #FDE047; }
-  h1 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: clamp(48px, 12vw, 84px); line-height: 0.9; margin-top: 8px; letter-spacing: 1px; }
-  h1 .pop { color: #FDE047; }
-  .sub { color: #D1FAE5; font-size: 14px; margin-top: 8px; }
-
-  .identbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); }
-  .identbar .who-am { display: flex; align-items: center; gap: 12px; font-size: 15px; }
-  .identbar .who-am .lbl { font-size: 12px; text-transform: uppercase; color: #A7F3D0; font-weight: 600; }
-  .identbar .who-am .nm { font-weight: 700; font-size: 16px; }
-
-  /* Navegação (Abas) */
-  nav.tabs { display: flex; gap: 8px; margin: 24px 0 20px; flex-wrap: wrap; }
-  .tab { 
-    appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--muted); 
-    font-family: var(--font-base); font-size: 14px; font-weight: 600; padding: 12px 20px; 
-    border-radius: 999px; cursor: pointer; transition: 0.2s; flex-grow: 1; text-align: center;
+  .toplink:hover { background: rgba(191,242,52,.16); border-color: rgba(191,242,52,.5); transform: translateY(-1px); }
+  .eyebrow {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--signal); display: inline-flex; gap: 9px; align-items: center;
   }
-  .tab[aria-selected="true"] { background: var(--signal); color: white; border-color: var(--signal); box-shadow: 0 2px 8px rgba(0,122,51,0.2); }
+  .eyebrow .dot {
+    width: 9px; height: 9px; border-radius: 50%; background: var(--signal);
+    box-shadow: 0 0 0 4px rgba(191,242,52,.18), 0 0 14px var(--signal);
+    animation: livePulse 1.9s ease-in-out infinite;
+  }
+  @keyframes livePulse { 0%,100% { box-shadow: 0 0 0 3px rgba(191,242,52,.24), 0 0 12px var(--signal);} 50% { box-shadow: 0 0 0 8px rgba(191,242,52,0), 0 0 18px var(--signal);} }
+  h1 {
+    font-family: var(--font-display); font-weight: 400; text-transform: uppercase;
+    font-size: clamp(46px, 10.5vw, 82px); line-height: 0.94; margin-top: 12px; letter-spacing: 1px;
+    text-shadow: 0 4px 28px rgba(0,0,0,.4);
+  }
+  h1 .pop { color: var(--signal); text-shadow: 0 0 28px rgba(191,242,52,.45); }
+  .sub { color: #AEBBCA; font-size: 13.5px; font-weight: 500; margin-top: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
-  /* Botões */
-  .btn { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--chalk); font-family: var(--font-base); font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 12px; cursor: pointer; transition: 0.2s; }
-  .btn.primary { background: var(--signal); color: white; border-color: var(--signal); }
-  .btn.ghost { background: rgba(255,255,255,0.1); color: inherit; border-color: currentColor; }
-  header .btn.ghost { color: white; border-color: rgba(255,255,255,0.4); }
-  .btn.small { font-size: 13px; padding: 8px 14px; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .identbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.10); }
+  .identbar .who-am { display: flex; align-items: center; gap: 11px; font-size: 15px; }
+  .identbar .who-am .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--signal); font-weight: 700; }
+  .identbar .who-am .nm { font-weight: 800; font-size: 16px; color: #fff; }
 
-  /* Filtros */
-  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
-  .chip { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 12px; padding: 10px 16px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
-  .chip[aria-pressed="true"] { background: #E6F4EA; color: var(--signal); border-color: var(--signal); font-weight: 700; }
+  /* ===== Abas — placar com sublinhado luminoso ===== */
+  nav.tabs { display: flex; gap: 2px; margin: 26px 0 22px; border-bottom: 1.5px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+  nav.tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    appearance: none; border: none; background: transparent; color: var(--muted);
+    font-family: var(--font-base); font-size: 14px; font-weight: 700; letter-spacing: .3px;
+    padding: 13px 18px; cursor: pointer; position: relative; flex: 1 0 auto; text-align: center; white-space: nowrap;
+    transition: color .18s cubic-bezier(.2,.8,.2,1);
+  }
+  .tab::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -1.5px; height: 3px; border-radius: 3px 3px 0 0; background: transparent; transition: .18s cubic-bezier(.2,.8,.2,1); }
+  .tab:hover { color: var(--chalk); }
+  .tab[aria-selected="true"] { color: var(--signal); }
+  .tab[aria-selected="true"]::after { background: var(--signal); box-shadow: 0 0 14px rgba(191,242,52,.7); }
 
-  /* Avatares */
-  .av { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--line); border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex: none; }
-  .av.ph { display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--muted); }
+  /* ===== Botões ===== */
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--chalk);
+    font-family: var(--font-base); font-weight: 700; font-size: 15px; padding: 12px 20px;
+    border-radius: var(--radius-sm); cursor: pointer; transition: .18s cubic-bezier(.2,.8,.2,1);
+  }
+  .btn:hover { border-color: rgba(255,255,255,.24); transform: translateY(-1px); }
+  .btn.primary { background: var(--signal); color: var(--signal-deep); border-color: transparent; font-weight: 800; box-shadow: 0 8px 22px rgba(191,242,52,.28); }
+  .btn.primary:hover { background: var(--signal-dark); box-shadow: 0 12px 30px rgba(191,242,52,.4); }
+  .btn.ghost { background: transparent; color: inherit; border-color: currentColor; }
+  header .btn.ghost { color: #fff; border-color: rgba(255,255,255,0.28); background: rgba(255,255,255,.06); border-radius: 999px; }
+  header .btn.ghost:hover { background: rgba(255,255,255,.16); }
+  .btn.small { font-size: 13px; padding: 9px 16px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-  /* Bolinhas de Pontuação (Novo Design) */
-  .badge-row { display: flex; gap: 8px; margin-top: 4px; align-items: center; flex-wrap: wrap; }
-  .score-badge { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; font-size: 13px; font-weight: 700; color: white; }
+  /* ===== Filtros ===== */
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); border-radius: 999px;
+    padding: 9px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: .15s;
+  }
+  .chip:hover { border-color: var(--signal); color: var(--signal); }
+  .chip[aria-pressed="true"] { background: rgba(191,242,52,.13); color: var(--signal); border-color: var(--signal); font-weight: 700; box-shadow: inset 0 0 0 1px var(--signal); }
+
+  /* ===== Avatares ===== */
+  .av { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; background: var(--panel-2); border: 2px solid var(--panel); box-shadow: 0 2px 8px rgba(0,0,0,.5); flex: none; }
+  .av.ph { display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 22px; color: var(--signal); background: linear-gradient(160deg, #243450, #16202F); }
+
+  /* ===== Bolinhas de pontuação ===== */
+  .badge-row { display: flex; gap: 6px; margin-top: 5px; align-items: center; flex-wrap: wrap; }
+  .score-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 25px; height: 25px; padding: 0 6px; border-radius: 999px; font-size: 12.5px; font-weight: 800; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
   .sb-5 { background: var(--p5); }
   .sb-3 { background: var(--p3); }
-  .sb-25 { background: var(--p25); color: white; }
-  .sb-0 { background: var(--p0); color: var(--muted); }
+  .sb-25 { background: var(--p25); }
+  .sb-0 { background: var(--p0); }
 
-  /* Leaderboard */
-  .board { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-  .board .row { display: grid; grid-template-columns: 50px 1fr auto; align-items: center; gap: 12px; padding: 16px; border-top: 1px solid var(--line); }
+  /* ===== Ranking ===== */
+  .board { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); box-shadow: var(--shadow-card); }
+  .board .row { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 12px; padding: 16px 18px; border-top: 1px solid var(--line-soft); transition: background .15s; }
   .board .row:first-child { border-top: none; }
-  .board .row.head { background: var(--panel-2); color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; padding: 12px 16px; }
-  
-  .rank { font-family: 'Bebas Neue', sans-serif; font-size: 36px; line-height: 1; color: var(--muted); text-align: center; }
-  .row.r1 .rank { color: #D69E2E; } /* Ouro */
-  .row.r2 .rank { color: #A0AEC0; } /* Prata */
-  .row.r3 .rank { color: #9C4221; } /* Bronze */
-  
-  .who { display: flex; align-items: center; gap: 14px; min-width: 0; }
-  .who .nm { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--chalk); }
-  .pts { font-weight: 700; font-size: 28px; text-align: right; color: var(--signal); line-height: 1; }
-  .pts small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
-  
-  .row.me { background: #F0FDF4; box-shadow: inset 4px 0 0 var(--signal); }
-  .youtag { font-size: 11px; background: var(--signal); color: white; border-radius: 6px; padding: 3px 8px; margin-left: 8px; text-transform: uppercase; font-weight: 700; vertical-align: middle; }
+  .board .row.head { background: var(--panel-2); color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; padding: 13px 18px; }
 
-  /* Cards de Jogos */
-  .match { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); margin-bottom: 16px; overflow: hidden; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-  .match .top { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
-  .match .top .g { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
-  .status { font-size: 12px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
-  .status.live { color: var(--live); border-color: #FED7D7; background: #FFF5F5; }
-  .status.fin { color: var(--signal); border-color: #C6F6D5; background: #F0FDF4; }
-  
-  .scoreline { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 20px 16px; }
+  .rank { font-family: var(--font-display); font-size: 34px; line-height: 1; color: var(--muted); text-align: center; }
+  .row.r1 .rank { color: var(--gold); text-shadow: 0 0 20px rgba(255,210,74,.5); }
+  .row.r2 .rank { color: var(--silver); text-shadow: 0 0 16px rgba(199,210,221,.3); }
+  .row.r3 .rank { color: var(--bronze); text-shadow: 0 0 16px rgba(224,136,74,.35); }
+
+  .who { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .who .nm { font-weight: 800; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--chalk); }
+  .pts { font-family: var(--font-display); font-weight: 400; font-size: 40px; text-align: right; color: var(--signal); line-height: .9; letter-spacing: .5px; text-shadow: 0 0 22px rgba(191,242,52,.25); }
+  .pts small { display: block; font-family: var(--font-base); font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+
+  .row.me { background: linear-gradient(100deg, rgba(191,242,52,.12) 0%, transparent 72%); box-shadow: inset 4px 0 0 var(--signal); }
+  .youtag { font-size: 10px; background: var(--signal); color: var(--signal-deep); border-radius: 6px; padding: 3px 7px; margin-left: 8px; letter-spacing: .5px; text-transform: uppercase; font-weight: 800; vertical-align: middle; }
+
+  /* ===== Nome em chamas (1º lugar) ===== */
+  .flame-name {
+    position: relative;
+    display: inline-block;
+    font-weight: 900;
+    /* gradiente quente, base amarela (mais clara, legível) subindo p/ vermelho */
+    background: linear-gradient(0deg, #FFF5C2 0%, #FFE259 20%, #FFB02E 44%, #FF7A1F 68%, #FF3D2E 88%, #E11D1D 100%);
+    background-size: 100% 260%;
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 1px rgba(255,200,80,.5);
+    animation: flameRise 1.1s ease-in-out infinite alternate;
+  }
+  /* aura difusa de fogo atrás do texto (camada larga + halo intenso) */
+  .flame-name::before {
+    content: attr(data-text);
+    position: absolute; left: 0; top: 0; z-index: -1;
+    background: linear-gradient(0deg, #FFD24A 0%, #FF8A1E 45%, #FF3D2E 80%, #C81616 100%);
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: blur(11px);
+    opacity: .9;
+    transform-origin: center bottom;
+    animation: flameFlicker .42s ease-in-out infinite alternate;
+  }
+  /* lufada superior de calor, leve e ondulante */
+  .flame-name::after {
+    content: attr(data-text);
+    position: absolute; left: 0; top: -2px; z-index: -2;
+    background: linear-gradient(0deg, #FFB02E 0%, #FF5A1E 60%, transparent 100%);
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: blur(16px);
+    opacity: .7;
+    transform-origin: center bottom;
+    animation: flameWaft .9s ease-in-out infinite alternate;
+  }
+  /* tocha viva ao lado do nome */
+  .flame-name .torch {
+    position: absolute; right: -26px; top: 50%; transform: translateY(-50%);
+    font-size: .9em; -webkit-text-fill-color: initial;
+    filter: drop-shadow(0 0 6px rgba(255,140,40,.9)) drop-shadow(0 -3px 10px rgba(255,90,20,.7));
+    animation: torchDance .5s ease-in-out infinite alternate;
+  }
+  @keyframes flameRise {
+    0%   { background-position: 50% 0%; }
+    100% { background-position: 50% 70%; }
+  }
+  @keyframes flameFlicker {
+    0%   { opacity: .55; filter: blur(9px);  transform: translateY(1px) scaleY(.96) scaleX(1.01); }
+    35%  { opacity: 1;   filter: blur(14px); transform: translateY(-.5px) scaleY(1.06) scaleX(.99); }
+    60%  { opacity: .7;  filter: blur(10px); transform: translateY(.5px) scaleY(1.0); }
+    100% { opacity: .95; filter: blur(13px); transform: translateY(-1px) scaleY(1.08) scaleX(1.02); }
+  }
+  @keyframes flameWaft {
+    0%   { opacity: .45; transform: translateY(0) scaleY(1.0) skewX(-2deg); }
+    50%  { opacity: .8;  transform: translateY(-3px) scaleY(1.12) skewX(2deg); }
+    100% { opacity: .55; transform: translateY(-5px) scaleY(1.2) skewX(-1deg); }
+  }
+  @keyframes torchDance {
+    0%   { transform: translateY(-48%) rotate(-5deg) scale(1); }
+    50%  { transform: translateY(-52%) rotate(4deg) scale(1.12); }
+    100% { transform: translateY(-50%) rotate(-3deg) scale(1.05); }
+  }
+
+  /* ===== Cards de jogos ===== */
+  .match { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); margin-bottom: 14px; overflow: hidden; cursor: pointer; transition: .18s cubic-bezier(.2,.8,.2,1); box-shadow: var(--shadow-card); }
+  .match:hover { transform: translateY(-3px); border-color: rgba(191,242,52,.5); box-shadow: 0 0 0 1px rgba(191,242,52,.28), 0 18px 42px rgba(0,0,0,.5); }
+  .match .top { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); background: var(--panel-2); }
+  .match .top .g { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .4px; text-transform: uppercase; }
+  .status { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: transparent; }
+  .status.live { color: #fff; border-color: var(--live); background: var(--live); box-shadow: 0 0 16px rgba(255,77,94,.45); animation: livePulse2 1.6s ease-in-out infinite; }
+  @keyframes livePulse2 { 0%,100% { box-shadow: 0 0 12px rgba(255,77,94,.35); } 50% { box-shadow: 0 0 22px rgba(255,77,94,.6); } }
+  .status.fin { color: var(--signal); border-color: rgba(191,242,52,.4); background: rgba(191,242,52,.10); }
+
+  .scoreline { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 22px 16px; }
   .team { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .team.away { justify-content: flex-end; text-align: right; }
-  .team img { width: 44px; height: 32px; object-fit: cover; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: none; }
-  .team .tn { font-weight: 700; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bignum { font-weight: 700; font-size: 36px; min-width: 40px; text-align: center; line-height: 1; }
-  .vs { color: var(--muted); font-size: 18px; font-weight: 600; }
-  
-  .kickoff { text-align: center; font-size: 14px; font-weight: 500; color: var(--muted); padding: 0 16px 12px; }
-  .cardfoot { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 14px; font-weight: 600; color: var(--muted); background: var(--panel-2); }
-  .cardfoot .go { color: var(--signal); }
-  .roundhead { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--chalk); margin: 32px 0 16px; display: flex; align-items: center; gap: 12px; }
-  .roundhead::after { content: ""; flex: 1; height: 2px; background: var(--line); }
+  .team img { width: 46px; height: 34px; object-fit: cover; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,.55); flex: none; }
+  .team .tn { font-weight: 800; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -.2px; color: var(--chalk); }
+  .bignum { font-family: var(--font-display); font-weight: 400; font-size: 46px; min-width: 44px; text-align: center; line-height: 1; color: var(--chalk); }
+  .vs { color: var(--muted); font-size: 15px; font-weight: 700; }
 
-  /* Linhas de Palpite (Modal) */
-  .pick-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .kickoff { text-align: center; font-size: 13.5px; font-weight: 600; color: var(--muted); padding: 0 16px 14px; }
+  .cardfoot { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-top: 1px solid var(--line-soft); font-size: 13.5px; font-weight: 700; color: var(--muted); background: var(--panel-2); }
+  .cardfoot .go { color: var(--signal); display: inline-flex; align-items: center; gap: 4px; }
+  .roundhead { font-family: var(--font-display); font-size: 31px; letter-spacing: 1px; color: var(--chalk); text-transform: uppercase; margin: 30px 0 16px; display: flex; align-items: center; gap: 14px; }
+  .roundhead::before { content: ""; width: 5px; height: 28px; border-radius: 3px; background: var(--signal); box-shadow: 0 0 14px rgba(191,242,52,.6); flex: none; }
+  .roundhead::after { content: ""; flex: 1; height: 1.5px; background: linear-gradient(90deg, var(--line), transparent); }
+
+  /* ===== Linhas de palpite ===== */
+  .pick-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line-soft); }
   .pick-line:first-of-type { border-top: none; }
-  .pick-line.me { box-shadow: inset 4px 0 0 var(--signal); padding-left: 12px; background: #F0FDF4; border-radius: 8px; }
+  .pick-line.me { box-shadow: inset 4px 0 0 var(--signal); padding-left: 12px; background: rgba(191,242,52,.09); border-radius: 10px; }
   .pl-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .pl-who .av { width: 36px; height: 36px; }
-  .pl-who .nm { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pl-flag { width: 28px; height: 20px; object-fit: cover; border-radius: 2px; vertical-align: middle; margin: 0 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-  .pl-rank { font-weight: 700; font-size: 15px; color: var(--muted); width: 24px; text-align: center; flex: none; }
-  
+  .pl-who .av { width: 38px; height: 38px; }
+  .pl-who .nm { font-size: 15.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--chalk); }
+  .pl-flag { width: 28px; height: 20px; object-fit: cover; border-radius: 3px; vertical-align: middle; margin: 0 6px; box-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  .pl-rank { font-family: var(--font-display); font-weight: 400; font-size: 20px; color: var(--muted); width: 26px; text-align: center; flex: none; }
+
   .pl-right { display: flex; align-items: center; gap: 12px; flex: none; }
-  .pscore { font-weight: 700; font-size: 18px; color: var(--chalk); }
-  .pscore.none { color: var(--muted); font-weight: 400; }
-  
-  .ptag { font-weight: 700; font-size: 14px; padding: 6px 12px; border-radius: 8px; min-width: 44px; text-align: center; color: white; }
-  .ptag.p5 { background: var(--p5); } 
-  .ptag.p3 { background: var(--p3); } 
-  .ptag.p25 { background: var(--p25); } 
-  .ptag.p0 { background: var(--p0); color: var(--muted); }
-  .ptag.pending { background: transparent; color: var(--muted); border: 2px dashed var(--line); }
-  .ptag.parcial { opacity: .92; box-shadow: inset 0 0 0 2px rgba(255,255,255,.55); }
+  .pscore { font-weight: 800; font-size: 17px; color: var(--chalk); }
+  .pscore.none { color: var(--muted); font-weight: 500; }
 
-  /* Grade de Perfis */
-  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-  .pcard { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
-  .pcard.me { border-color: var(--signal); background: #F0FDF4; }
-  .pcard .av { width: 56px; height: 56px; }
-  .pcard .nm { font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1.1; }
+  .ptag { font-weight: 800; font-size: 13.5px; padding: 7px 12px; border-radius: 10px; min-width: 46px; text-align: center; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+  .ptag.p5 { background: var(--p5); }
+  .ptag.p3 { background: var(--p3); }
+  .ptag.p25 { background: var(--p25); }
+  .ptag.p0 { background: var(--p0); }
+  .ptag.pending { background: transparent; color: var(--muted); border: 2px dashed var(--line); box-shadow: none; }
+  .ptag.parcial { opacity: .96; box-shadow: inset 0 0 0 2px rgba(255,255,255,.45), 0 2px 8px rgba(0,0,0,.35); }
 
-  /* Modais */
-  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; align-items: flex-end; justify-content: center; z-index: 50; padding: 20px 0 0 0; }
-  .scrim.open { display: flex; }
-  .modal { width: 100%; max-width: 600px; background: var(--panel); border-radius: 24px 24px 0 0; padding: 24px; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); }
-  
-  .modal .x { position: absolute; top: 16px; right: 16px; background: var(--line); border: none; color: var(--chalk); border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 100; }
-  .modal h3 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; padding-right: 40px; margin-bottom: 8px; }
+  /* ===== Grade de perfis ===== */
+  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 14px; }
+  .pcard { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 18px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: .18s cubic-bezier(.2,.8,.2,1); box-shadow: var(--shadow-card); }
+  .pcard:hover { transform: translateY(-3px); border-color: rgba(191,242,52,.5); box-shadow: 0 0 0 1px rgba(191,242,52,.25), 0 16px 36px rgba(0,0,0,.5); }
+  .pcard.me { border-color: var(--signal); background: linear-gradient(120deg, rgba(191,242,52,.10), transparent 75%); }
+  .pcard .av { width: 58px; height: 58px; }
+  .pcard .nm { font-family: var(--font-display); font-size: 27px; line-height: 1.05; letter-spacing: .5px; text-transform: uppercase; color: var(--chalk); }
+
+  /* ===== Modais ===== */
+  .scrim { position: fixed; inset: 0; background: rgba(3,6,12,0.72); backdrop-filter: blur(8px); display: none; align-items: flex-end; justify-content: center; z-index: 50; padding: 20px 0 0 0; }
+  .scrim.open { display: flex; animation: scrimIn .2s ease; }
+  @keyframes scrimIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal { width: 100%; max-width: 600px; background: var(--panel); border: 1px solid var(--line); border-bottom: none; border-radius: 26px 26px 0 0; padding: 26px; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-pop); animation: modalUp .26s cubic-bezier(.2,.8,.2,1); }
+  @keyframes modalUp { from { transform: translateY(28px); opacity: .5; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal .x { position: absolute; top: 18px; right: 18px; background: var(--panel-2); border: 1px solid var(--line); color: var(--chalk); border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 100; transition: .15s; }
+  .modal .x:hover { background: var(--line); }
+  .modal h3 { font-family: var(--font-display); font-size: 35px; letter-spacing: 1px; text-transform: uppercase; padding-right: 44px; margin-bottom: 8px; color: var(--chalk); }
   .modal .mhead { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
-  .modal .mhead .av { width: 64px; height: 64px; }
+  .modal .mhead .av { width: 66px; height: 66px; }
   .modal-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 20px 0; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
 
-  /* Modal de Entrada */
+  /* ===== Modal de entrada ===== */
   .entry-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 20px 0; }
-  .entry-prof { display: flex; align-items: center; gap: 16px; border: 2px solid var(--line); background: var(--panel); color: var(--chalk); border-radius: 16px; padding: 16px; cursor: pointer; transition: 0.2s; text-align: left; }
+  .entry-prof { display: flex; align-items: center; gap: 14px; border: 1.5px solid var(--line); background: var(--panel-2); color: var(--chalk); border-radius: 16px; padding: 14px; cursor: pointer; transition: .16s cubic-bezier(.2,.8,.2,1); text-align: left; }
+  .entry-prof:hover { border-color: var(--signal); background: rgba(191,242,52,.08); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.45); }
   .entry-prof .av { width: 48px; height: 48px; }
-  .entry-prof .nm { font-weight: 700; font-size: 18px; }
-  .entry-guest { width: 100%; margin-top: 8px; padding: 16px; font-size: 16px; }
+  .entry-prof .nm { font-weight: 800; font-size: 17px; color: var(--chalk); }
+  .entry-guest { width: 100%; margin-top: 8px; padding: 15px; font-size: 15px; }
 
-  /* Editor de Palpites */
-  .pe-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; padding: 16px 0; border-top: 1px solid var(--line); }
-  .pe-row .lbl { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* ===== Editor de palpites ===== */
+  .pe-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; padding: 15px 0; border-top: 1px solid var(--line-soft); }
+  .pe-row .lbl { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--chalk); }
   .pe-row .lbl.away { text-align: right; }
   .pe-row .mid { display: flex; gap: 8px; align-items: center; justify-content: center; }
-  .fld { background: var(--panel-2); border: 2px solid var(--line); border-radius: 12px; color: var(--chalk); font-family: var(--font-base); font-size: 18px; font-weight: 700; padding: 12px; width: 100%; }
-  .scoreinput { width: 60px; text-align: center; }
-  
-  /* Rodapé Fixo do Modal */
-  .modal-actions { 
-    display: flex; gap: 12px; justify-content: flex-end; 
-    position: sticky; bottom: -24px; 
-    background: var(--panel); 
-    padding: 16px 24px 24px; margin: 24px -24px -24px; 
-    border-top: 1px solid var(--line); 
-    z-index: 10; 
+  .fld { background: var(--panel-2); border: 1.5px solid var(--line); border-radius: 12px; color: var(--chalk); font-family: var(--font-base); font-size: 18px; font-weight: 700; padding: 12px; width: 100%; transition: .15s; }
+  .fld:focus { outline: none; border-color: var(--signal); background: #0F1622; box-shadow: 0 0 0 4px rgba(191,242,52,.16); }
+  .fld::placeholder { color: var(--muted); }
+  .scoreinput { width: 62px; text-align: center; }
+
+  .modal-actions {
+    display: flex; gap: 12px; justify-content: flex-end;
+    position: sticky; bottom: -26px;
+    background: var(--panel);
+    padding: 16px 26px 26px; margin: 24px -26px -26px;
+    border-top: 1px solid var(--line);
+    z-index: 10;
   }
   .modal-actions .btn { flex: 1; padding: 16px; font-size: 16px; }
 
-  .empty { border: 2px dashed var(--line); border-radius: var(--radius); padding: 40px 20px; text-align: center; color: var(--muted); font-size: 16px; font-weight: 500; }
-  
-  /* Rodapé / Legenda */
-  footer { margin-top: 32px; background: white; padding: 20px; border-radius: var(--radius); border: 1px solid var(--line); }
-  footer .legend-title { font-weight: 700; font-size: 15px; margin-bottom: 12px; text-align: center; color: var(--chalk); }
-  footer .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-  footer .legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: var(--muted); }
+  .empty { border: 2px dashed var(--line); border-radius: var(--radius); padding: 44px 20px; text-align: center; color: var(--muted); font-size: 15px; font-weight: 600; background: var(--panel); }
 
-  /* Tabela de Classificação (Fase de Grupos) */
-  .st-note { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-  .st-note .st-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--signal); flex: none; }
-  .standings { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-  .standings th, .standings td { padding: 11px 4px; text-align: center; font-size: 14px; }
-  .standings thead th { background: var(--panel-2); color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
-  .standings tbody tr { border-top: 1px solid var(--line); }
-  .standings .st-pos { width: 34px; color: var(--muted); font-weight: 700; }
-  .standings .st-pts { width: 42px; font-weight: 700; color: var(--signal); }
+  /* ===== Rodapé / legenda ===== */
+  footer { margin-top: 30px; background: var(--panel); padding: 22px; border-radius: var(--radius); border: 1px solid var(--line); box-shadow: var(--shadow-card); }
+  footer .legend-title { font-family: var(--font-display); font-weight: 400; letter-spacing: 1px; text-transform: uppercase; font-size: 24px; margin-bottom: 14px; text-align: center; color: var(--chalk); }
+  footer .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  footer .legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--muted); padding: 11px 13px; background: var(--panel-2); border-radius: 12px; border: 1px solid var(--line-soft); }
+
+  /* ===== Tabela de classificação ===== */
+  .st-note { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
+  .st-note .st-dot { width: 11px; height: 11px; border-radius: 4px; background: var(--signal); box-shadow: 0 0 10px rgba(191,242,52,.5); flex: none; }
+  .standings { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-card); }
+  .standings th, .standings td { padding: 12px 4px; text-align: center; font-size: 14px; color: var(--chalk); }
+  .standings thead th { background: var(--panel-2); color: var(--muted); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .standings tbody tr { border-top: 1px solid var(--line-soft); }
+  .standings .st-pos { width: 34px; color: var(--muted); font-weight: 800; }
+  .standings .st-pts { width: 42px; font-weight: 800; color: var(--signal); }
   .standings .st-sg { width: 46px; color: var(--muted); }
   .standings th:nth-child(4), .standings th:nth-child(5), .standings th:nth-child(6),
   .standings td:nth-child(4), .standings td:nth-child(5), .standings td:nth-child(6) { width: 30px; }
   .standings .st-team { text-align: left; overflow: hidden; }
   .standings .st-team-in { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .standings .st-team-in span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-  .standings .st-flag { width: 24px; height: 17px; object-fit: cover; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); flex: none; }
-  .standings tr.qual td { background: #F0FDF4; }
+  .standings .st-team-in span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; color: var(--chalk); }
+  .standings .st-flag { width: 25px; height: 18px; object-fit: cover; border-radius: 3px; box-shadow: 0 1px 4px rgba(0,0,0,.6); flex: none; }
+  .standings tr.qual td { background: rgba(191,242,52,.07); }
   .standings tr.qual td.st-pos { color: var(--signal); box-shadow: inset 3px 0 0 var(--signal); }
 
-  /* Mata-mata (chaveamento) */
+  /* ===== Mata-mata: nota + salvar ===== */
   .ko-note { font-size: 13px; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; line-height: 1.45; }
   .ko-note b { color: var(--chalk); }
-  .ko-champ { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #005A25 0%, #007A33 100%); color: #fff; border-radius: var(--radius); padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,122,51,0.18); }
-  .ko-champ .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: #A7F3D0; font-weight: 700; }
-  .ko-champ .nm { font-family: 'Bebas Neue', sans-serif; font-size: 30px; line-height: 1; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ko-champ img { width: 44px; height: 31px; object-fit: cover; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); flex: none; }
-  .ko-round { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; color: var(--chalk); margin: 28px 0 12px; display: flex; align-items: center; gap: 12px; }
-  .ko-round::after { content: ""; flex: 1; height: 2px; background: var(--line); }
-  .ko-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  .ko-match { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.03); }
-  .ko-pair { display: flex; flex-direction: column; }
-  .ko-team { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: none; border-top: 1px solid var(--line); background: var(--panel); color: var(--chalk); font-family: var(--font-base); font-size: 15px; font-weight: 600; padding: 13px 14px; cursor: pointer; transition: 0.15s; }
-  .ko-team:first-child { border-top: none; }
-  .ko-team img { width: 26px; height: 19px; object-fit: cover; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); flex: none; }
-  .ko-team span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ko-team:not(:disabled):hover { background: var(--panel-2); }
-  .ko-team.sel { background: #F0FDF4; color: var(--signal); box-shadow: inset 4px 0 0 var(--signal); }
-  .ko-team.sel:not(:disabled):hover { background: #E6F4EA; }
-  .ko-team .ko-check { font-weight: 800; color: var(--signal); flex: none; }
-  .ko-team:disabled { cursor: default; }
-  .ko-team.empty { color: var(--muted); font-weight: 500; font-style: italic; border-top: 1px solid var(--line); padding: 13px 14px; }
-  .ko-team.empty:first-child { border-top: none; }
-  .ko-champs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 8px; }
-  .ko-champ-card { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--panel); min-width: 0; }
-  .ko-champ-card .av { width: 34px; height: 34px; flex: none; }
   .ko-save { position: sticky; bottom: 16px; margin-top: 20px; }
-  .ko-save .btn { width: 100%; padding: 16px; font-size: 16px; box-shadow: 0 6px 20px rgba(0,122,51,0.28); }
+  .ko-save .btn { width: 100%; padding: 16px; font-size: 16px; box-shadow: 0 10px 28px rgba(191,242,52,.32); }
 
-  @media (min-width: 600px) {
-    .ko-list { grid-template-columns: 1fr 1fr; gap: 12px; }
-  }
+  /* ===== Acordeão (Meus Palpites) ===== */
+  .acc { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); margin-bottom: 14px; overflow: hidden; box-shadow: var(--shadow-card); }
+  .acc > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 18px; font-weight: 800; font-size: 15.5px; color: var(--chalk); background: var(--panel-2); transition: .15s; }
+  .acc > summary:hover { color: var(--signal); }
+  .acc > summary::-webkit-details-marker { display: none; }
+  .acc .acc-ar { color: var(--muted); transition: transform 0.2s; font-size: 13px; }
+  .acc[open] .acc-ar { transform: rotate(180deg); color: var(--signal); }
+  .acc .acc-body { padding: 16px 16px 4px; }
+
+  /* ===== Editor de palpites do mata-mata ===== */
+  .ke-round { font-family: var(--font-display); font-weight: 400; font-size: 23px; letter-spacing: .8px; text-transform: uppercase; color: var(--chalk); margin: 18px 0 8px; }
+  .ke-champ { background: rgba(191,242,52,.10); border: 1px solid rgba(191,242,52,.30); color: var(--signal); border-radius: 12px; padding: 11px 14px; font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+  .ke-row { border-top: 1px solid var(--line-soft); padding: 11px 0; }
+  .ke-row:first-of-type { border-top: none; }
+  .ke-row.off { opacity: 0.5; }
+  .ke-line { display: grid; grid-template-columns: 1fr auto auto auto 1fr; align-items: center; gap: 8px; }
+  .ke-side { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 14px; font-weight: 700; color: var(--chalk); }
+  .ke-side.away { justify-content: flex-end; text-align: right; }
+  .ke-tn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ke-tn.tbd { color: var(--muted); font-weight: 500; font-style: italic; }
+  .ke-in { width: 52px; text-align: center; padding: 9px; font-size: 17px; font-weight: 800; }
+  .ke-pen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 9px 0 2px; font-size: 13px; color: var(--muted); }
+  .ke-adv { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--chalk); font-family: var(--font-base); font-weight: 700; font-size: 13px; padding: 7px 13px; border-radius: 999px; cursor: pointer; transition: .15s; }
+  .ke-adv:hover { border-color: var(--signal); color: var(--signal); }
+  .ke-adv.on { background: var(--signal); color: var(--signal-deep); border-color: var(--signal); box-shadow: 0 0 14px rgba(191,242,52,.4); }
+
+  /* ===== Bracket (aba Mata-mata) — zoom e arrasto ===== */
+  .kb-wrap { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); overflow: hidden; box-shadow: var(--shadow-card); }
+  .kb-ctrls { position: absolute; top: 10px; right: 10px; z-index: 5; display: flex; gap: 6px; }
+  .kb-ctrls .btn { background: var(--panel); box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+  .kb-stage { height: 68vh; max-height: 640px; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .kb-stage:active { cursor: grabbing; }
+  .kb-bracket { display: flex; gap: 44px; --hg: 22px; width: max-content; transform-origin: 0 0; }
+  .kb-col { display: flex; flex-direction: column; width: 152px; }
+  .kb-head { height: 26px; font-family: var(--font-display); font-weight: 400; font-size: 19px; letter-spacing: 1px; text-transform: uppercase; color: var(--signal); text-align: center; }
+  .kb-cells { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
+  .kb-slot { position: relative; display: flex; align-items: center; }
+  .kb-cell { position: relative; width: 100%; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+  .kb-cell.kb-hasright::after { content: ""; position: absolute; right: calc(-1 * var(--hg)); top: 50%; width: var(--hg); height: 2px; background: var(--line); }
+  .kb-team { display: flex; align-items: center; gap: 6px; padding: 7px 9px; font-size: 12px; font-weight: 700; color: var(--chalk); border-top: 1px solid var(--line-soft); }
+  .kb-team:first-child { border-top: none; }
+  .kb-team img { width: 18px; height: 13px; object-fit: cover; border-radius: 2px; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  .kb-team span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kb-team.tbd { color: var(--muted); font-weight: 500; font-style: italic; }
+  .kb-join { position: absolute; left: calc(-1 * var(--hg)); top: 50%; transform: translateY(-50%); width: var(--hg); height: var(--conn, 0); border: 2px solid var(--line); border-right: none; border-radius: 5px 0 0 5px; }
 
   .hidden { display: none !important; }
 
   @media (min-width: 600px) {
     .scrim { align-items: center; padding: 20px; }
-    .modal { border-radius: 24px; max-height: 85vh; }
+    .modal { border-radius: 26px; border-bottom: 1px solid var(--line); max-height: 85vh; }
     .entry-grid { grid-template-columns: repeat(2, 1fr); }
     .modal-actions .btn { flex: none; min-width: 120px; }
   }
   @media (max-width: 480px) {
-    .board .row { grid-template-columns: 40px 1fr auto; gap: 8px; padding: 12px; }
-    .pts { font-size: 24px; }
+    header { padding: 26px 20px 22px; }
+    .board .row { grid-template-columns: 46px 1fr auto; gap: 10px; padding: 14px 14px; }
+    .pts { font-size: 34px; }
     .team .tn { font-size: 16px; }
-    .bignum { font-size: 28px; }
+    .bignum { font-size: 38px; }
+    .tab { padding: 12px 13px; font-size: 13px; }
   }
+
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
+    <div class="header-glow" aria-hidden="true"></div>
+    <div class="header-stripes" aria-hidden="true"></div>
     <a class="toplink" href="evolucao.html">Evolução ↗</a>
     <div class="eyebrow"><span class="dot"></span> Fase de grupos · Copa 2026</div>
     <h1>Bolão <span class="pop">da Copa</span></h1>
@@ -546,7 +709,7 @@ async function save(){
 }
 function flash(msg){
   const f=document.createElement("div"); f.textContent=msg;
-  f.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--signal);color:white;font-weight:700;font-size:15px;padding:14px 24px;border-radius:12px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.3)";
+  f.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--signal);color:#0E1A06;font-weight:800;font-size:15px;padding:14px 24px;border-radius:12px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.3)";
   document.body.appendChild(f); setTimeout(()=>f.remove(),3000);
 }
 
@@ -587,6 +750,9 @@ function renderRanking(){
   const rows=rk.map((e,i)=>{
     const cls=(i===0?"r1":i===1?"r2":i===2?"r3":"")+(me()&&me().id===e.prof.id?" me":"");
     const tag=me()&&me().id===e.prof.id?`<span class="youtag">Você</span>`:"";
+    const nameHtml = i===0
+      ? `<span class="flame-name" data-text="${esc(e.prof.name)}">${esc(e.prof.name)}<span class="torch">\u{1F525}</span></span>`
+      : esc(e.prof.name);
     
     // Novo Visual de Metadados (Bolinhas)
     const badges = `
@@ -600,7 +766,7 @@ function renderRanking(){
 
     return `<div class="row ${cls}">
       <div class="rank">${i+1}</div>
-      <div class="who">${avatar(e.prof)}<div style="min-width:0"><div class="nm">${esc(e.prof.name)}${tag}</div>
+      <div class="who">${avatar(e.prof)}<div style="min-width:0"><div class="nm"${i===0?' style="overflow:visible;padding-right:26px"':''}>${nameHtml}${tag}</div>
         ${badges}</div></div>
       <div class="pts">${fmtPts(e.total)}<small>pontos</small></div>
     </div>`;
@@ -743,65 +909,140 @@ function koSeeds(){
     85:[w("B"),tm(85)], 86:[w("J"),ru("H")], 87:[w("K"),tm(87)], 88:[ru("D"),ru("G")]
   };
 }
-// Times de TODOS os jogos: R32 vem dos seeds; fases seguintes vêm dos PALPITES do usuário.
-function koResolveAll(picks){
-  const M={...koSeeds()}, cr=crestMap(), T=(name)=> name?{name,crest:cr[name]||""}:null;
+// Vencedor de um jogo a partir do palpite de placar (empate -> quem avança nos pênaltis).
+function koWinner(teams,pick){
+  if(!teams||!teams[0]||!teams[1]||!pick||typeof pick!=="object"||pick.h==null||pick.a==null) return null;
+  if(+pick.h>+pick.a) return teams[0];
+  if(+pick.a>+pick.h) return teams[1];
+  return pick.adv==="home"?teams[0]:(pick.adv==="away"?teams[1]:null);
+}
+// Foto do chaveamento AGORA: R32 pela classificação; fases seguintes a definir.
+function koResolveProjection(){
+  const M={...koSeeds()};
+  for(const mid of [89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]) M[mid]=[null,null];
+  return M;
+}
+// Bracket pessoal: o vencedor que a pessoa previu avança pra próxima fase.
+function koResolvePicks(picks){
+  const M={...koSeeds()};
   for(const mid of [89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]){
     const f=KO_FEED[mid];
-    M[mid]=[T(picks&&picks[f[0]]), T(picks&&picks[f[1]])];
+    M[mid]=[ koWinner(M[f[0]],picks&&picks[f[0]]), koWinner(M[f[1]],picks&&picks[f[1]]) ];
   }
   return M;
 }
-function koTeamSlot(mid,t,pick,editable){
-  if(!t) return `<div class="ko-team empty">A definir</div>`;
-  const sel=pick===t.name;
-  return `<button class="ko-team${sel?' sel':''}" data-mid="${mid}" data-team="${esc(t.name)}"${editable?'':' disabled'}>
-    <img src="${esc(t.crest||'')}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span>${sel?'<span class="ko-check">✓</span>':''}</button>`;
+
+/* ----- Aba Mata-mata: bracket inteiro, só leitura, com zoom e arrasto ----- */
+const KO_BRACKET_COLS=[
+  {label:"16-avos", ids:[74,77,73,75,83,84,81,82,76,78,79,80,86,88,85,87]},
+  {label:"Oitavas", ids:[89,90,93,94,91,92,95,96], childN:16},
+  {label:"Quartas", ids:[97,98,99,100], childN:8},
+  {label:"Semis",   ids:[101,102], childN:4},
+  {label:"Final",   ids:[104], childN:2}
+];
+const KO_H=1040;   // altura base (px) da área de jogos, p/ alinhar as fases
+let MEUS_OPEN={grupos:false, mata:false};
+let koZoom=1, koPanX=12, koPanY=12, koViewInit=false;
+function koCell(teams,hasRight){
+  const slot=(t)=> t?`<div class="kb-team"><img src="${esc(t.crest||'')}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span></div>`:`<div class="kb-team tbd">A definir</div>`;
+  return `<div class="kb-cell${hasRight?' kb-hasright':''}">${slot(teams[0])}${slot(teams[1])}</div>`;
+}
+function koMountPanZoom(stage,inner){
+  let z=koZoom, ox=koPanX, oy=koPanY;
+  const clamp=(v)=>Math.max(0.2,Math.min(3,v));
+  const apply=()=>{ inner.style.transform=`translate(${ox}px,${oy}px) scale(${z})`; koZoom=z; koPanX=ox; koPanY=oy; };
+  if(!koViewInit){ const sw=stage.clientWidth||360, bw=inner.scrollWidth||910; z=clamp(Math.min(1,(sw-24)/bw)); ox=12; oy=12; koViewInit=true; }
+  apply();
+  const zoomAt=(nz,mx,my)=>{ nz=clamp(nz); ox=mx-(mx-ox)*(nz/z); oy=my-(my-oy)*(nz/z); z=nz; apply(); };
+  const pts=new Map(); let pan=null, pinch=null;
+  stage.onpointerdown=(e)=>{ stage.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===1){ pan={x:e.clientX,y:e.clientY,ox,oy}; pinch=null; }
+    else if(pts.size===2){ const a=[...pts.values()], r=stage.getBoundingClientRect();
+      pinch={d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y), z, mx:(a[0].x+a[1].x)/2-r.left, my:(a[0].y+a[1].y)/2-r.top}; pan=null; } };
+  stage.onpointermove=(e)=>{ if(!pts.has(e.pointerId)) return; pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch&&pts.size>=2){ const a=[...pts.values()], d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); zoomAt(pinch.z*d/pinch.d, pinch.mx, pinch.my); }
+    else if(pan){ ox=pan.ox+(e.clientX-pan.x); oy=pan.oy+(e.clientY-pan.y); apply(); } };
+  const end=(e)=>{ pts.delete(e.pointerId); pinch=null; if(pts.size===1){ const q=[...pts.values()][0]; pan={x:q.x,y:q.y,ox,oy}; } else if(pts.size===0){ pan=null; } };
+  stage.onpointerup=end; stage.onpointercancel=end; stage.onlostpointercapture=end;
+  stage.onwheel=(e)=>{ e.preventDefault(); const r=stage.getBoundingClientRect(); zoomAt(z*(e.deltaY<0?1.12:0.89), e.clientX-r.left, e.clientY-r.top); };
+  const ctr=(f)=>{ const r=stage.getBoundingClientRect(); zoomAt(f(z), r.width/2, r.height/2); };
+  if($("#koZin")) $("#koZin").onclick=()=>ctr(v=>v*1.2);
+  if($("#koZout")) $("#koZout").onclick=()=>ctr(v=>v/1.2);
+  if($("#koZfit")) $("#koZfit").onclick=()=>{ const sw=stage.clientWidth||360, bw=inner.scrollWidth||910; z=clamp(Math.min(1,(sw-24)/bw)); ox=12; oy=12; apply(); };
 }
 async function renderMataMata(){
   if(!R32T){
     $("#content").innerHTML=`<div class="empty">Carregando chaveamento…</div>`;
     try{ await loadR32Thirds(); }catch(e){ $("#content").innerHTML=`<div class="empty">Não consegui carregar o chaveamento. Tente recarregar a página.</div>`; return; }
-    if(VIEW!=="matamata") return;   // usuário trocou de aba enquanto carregava
+    if(VIEW!=="matamata") return;
   }
-  const p=me(), picks=p?(p.ko||{}):{}, editable=!!p, cr=crestMap();
-  const M=koResolveAll(picks);
-
-  // Resumo: quem cada palpiteiro crava campeão
-  const champs=PROFILES.filter(x=>x.ko&&x.ko[104]);
-  const champsHtml = champs.length?`<div class="ko-round" style="margin-top:0">Quem cada um crava campeão</div>
-    <div class="ko-champs-grid">${champs.map(x=>`<div class="ko-champ-card">${avatar(x)}<div style="min-width:0"><div style="font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.name)}</div><div style="display:flex;align-items:center;gap:6px;font-weight:700;min-width:0"><img src="${esc(cr[x.ko[104]]||'')}" alt="" style="width:22px;height:16px;object-fit:cover;border-radius:2px;flex:none" onerror="this.style.display='none'"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.ko[104])}</span></div></div></div>`).join("")}</div>`:"";
-
-  let head;
-  if(!p){
-    head=`<div class="ko-note">Entre com seu perfil (botão <b>Trocar Perfil</b> no topo) para cravar seu mata-mata. Abaixo está o chaveamento projetado pela <b>classificação atual</b>.</div>`;
-  }else{
-    const champName=picks[104]||null;
-    head=`<div class="ko-champ">
-      <div style="flex:1;min-width:0"><div class="lbl">Seu campeão</div><div class="nm">${champName?esc(champName):'— defina na Final —'}</div></div>
-      ${champName?`<img src="${esc(cr[champName]||'')}" alt="" onerror="this.style.display='none'">`:''}</div>
-    <div class="ko-note">Toque no time que você acha que avança — o vencedor sobe pra próxima fase. Os 16-avos já vêm preenchidos pela <b>classificação atual</b> (regras da FIFA: 1º, 2º e os 8 melhores 3º lugares, com o chaveamento do Anexo C). Os palpites ficam <b>fixos</b> mesmo se os classificados mudarem. Não vale pontos — é só pra cravar quem vai longe.</div>`;
-  }
-
-  const rounds=KO_ROUNDS.map(([label,ids])=>{
-    const cards=ids.map(mid=>{
-      const a=M[mid][0], b=M[mid][1], pick=picks[mid]||null, can=editable&&!!a&&!!b;
-      return `<div class="ko-match"><div class="ko-pair">${koTeamSlot(mid,a,pick,can)}${koTeamSlot(mid,b,pick,can)}</div></div>`;
+  const M=koResolveProjection(), last=KO_BRACKET_COLS.length-1;
+  const cols=KO_BRACKET_COLS.map((col,ci)=>{
+    const cells=col.ids.map(mid=>{
+      const join=col.childN?`<span class="kb-join" style="--conn:${KO_H/col.childN}px"></span>`:"";
+      return `<div class="kb-slot">${join}${koCell(M[mid], ci<last)}</div>`;
     }).join("");
-    return `<div class="ko-round">${label}</div><div class="ko-list">${cards}</div>`;
+    return `<div class="kb-col"><div class="kb-head">${esc(col.label)}</div><div class="kb-cells">${cells}</div></div>`;
   }).join("");
+  $("#content").innerHTML=`
+    <div class="ko-note">Foto do chaveamento <b>agora</b>, pela classificação atual — os 16-avos já saem das regras da FIFA (1º, 2º e os 8 melhores 3º, com o Anexo C); as fases seguintes só aparecem quando os jogos acontecerem. Aqui é <b>só visualização</b>: para cravar seus placares, vá na aba <b>Palpites</b>. Arraste para os lados e use os botões de zoom.</div>
+    <div class="kb-wrap">
+      <div class="kb-ctrls"><button class="btn small" id="koZout" aria-label="Diminuir zoom">−</button><button class="btn small" id="koZfit">Ajustar</button><button class="btn small" id="koZin" aria-label="Aumentar zoom">+</button></div>
+      <div class="kb-stage" id="koStage"><div class="kb-bracket" id="koBracket" style="height:${KO_H+26}px">${cols}</div></div>
+    </div>`;
+  koMountPanZoom($("#koStage"), $("#koBracket"));
+}
 
-  $("#content").innerHTML = champsHtml + head + rounds + (p?`<div class="ko-save"><button class="btn primary" id="koSaveBtn">Salvar meu mata-mata</button></div>`:"");
-
-  $$(".ko-team[data-mid]").forEach(btn=> btn.onclick=()=>{
-    const pp=me(); if(!pp) return;
-    const mid=+btn.dataset.mid, team=btn.dataset.team;
-    pp.ko=pp.ko||{};
-    if(pp.ko[mid]===team) delete pp.ko[mid]; else pp.ko[mid]=team;
-    PROFILES=PROFILES.map(x=>x.id===pp.id?pp:x);
-    DIRTY=true; renderMataMata();
+/* ----- Editor de palpites do mata-mata (na aba Palpites) ----- */
+function koEditorHtml(picks){
+  const M=koResolvePicks(picks), champ=koWinner(M[104], picks&&picks[104]);
+  const rounds=KO_ROUNDS.map(([label,ids])=>{
+    const rows=ids.map(mid=>{
+      const A=M[mid][0], B=M[mid][1], known=!!(A&&B);
+      const pk=(picks&&typeof picks[mid]==="object")?picks[mid]:null;
+      const hv=pk&&pk.h!=null?pk.h:"", av=pk&&pk.a!=null?pk.a:"";
+      const draw=known && hv!=="" && av!=="" && (+hv===+av);
+      const nm=(t)=> t?`<span class="ke-tn">${esc(t.name)}</span>`:`<span class="ke-tn tbd">A definir</span>`;
+      const fl=(t)=> t?`<img class="pl-flag" src="${esc(t.crest||'')}" alt="" onerror="this.style.display='none'">`:"";
+      const pen= draw?`<div class="ke-pen"><span>Empate — quem passa nos pênaltis?</span>
+        <button class="ke-adv${pk&&pk.adv==='home'?' on':''}" data-mid="${mid}" data-adv="home">${esc(A.name)}</button>
+        <button class="ke-adv${pk&&pk.adv==='away'?' on':''}" data-mid="${mid}" data-adv="away">${esc(B.name)}</button></div>`:"";
+      return `<div class="ke-row${known?'':' off'}">
+        <div class="ke-line">
+          <div class="ke-side">${fl(A)}${nm(A)}</div>
+          <input class="fld ke-in" type="number" min="0" inputmode="numeric" data-mid="${mid}" data-side="h" value="${hv}"${known?'':' disabled'}>
+          <span class="vs">×</span>
+          <input class="fld ke-in" type="number" min="0" inputmode="numeric" data-mid="${mid}" data-side="a" value="${av}"${known?'':' disabled'}>
+          <div class="ke-side away">${nm(B)}${fl(B)}</div>
+        </div>${pen}
+      </div>`;
+    }).join("");
+    return `<div class="ke-round">${label}</div>${rows}`;
+  }).join("");
+  return `<div class="ke-champ">Seu campeão previsto: <b>${champ?esc(champ.name):'—'}</b></div>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Crave o placar de cada jogo; o vencedor avança e monta a próxima fase. Em empate, escolha quem passa nos pênaltis. Os 16-avos saem da classificação atual e seus palpites ficam fixos.</p>
+    ${rounds}
+    <div class="ko-save"><button class="btn primary" id="koSaveBtn">Salvar meu mata-mata</button></div>`;
+}
+function bindKoEditor(){
+  const host=$("#koEditor"); if(!host) return;
+  const refresh=()=>{ const p=me(); host.innerHTML=koEditorHtml(p?p.ko||{}:{}); bindKoEditor(); };
+  $$(".ke-in",host).forEach(inp=> inp.onchange=()=>{
+    const p=me(); if(!p) return; p.ko=p.ko||{};
+    const mid=+inp.dataset.mid, side=inp.dataset.side==="h"?"h":"a";
+    const cur=(typeof p.ko[mid]==="object"&&p.ko[mid])?p.ko[mid]:{};
+    cur[side]= inp.value===""?null:Math.max(0,parseInt(inp.value,10)||0);
+    if(cur.h==null&&cur.a==null) delete p.ko[mid]; else p.ko[mid]=cur;
+    if(p.ko[mid]&&p.ko[mid].h!=null&&p.ko[mid].a!=null&&+p.ko[mid].h!==+p.ko[mid].a) delete p.ko[mid].adv;
+    PROFILES=PROFILES.map(x=>x.id===p.id?p:x); DIRTY=true; MEUS_OPEN.mata=true; refresh();
   });
-  if($("#koSaveBtn")) $("#koSaveBtn").onclick=()=>save();
+  $$(".ke-adv",host).forEach(b=> b.onclick=()=>{
+    const p=me(); if(!p) return; p.ko=p.ko||{};
+    const mid=+b.dataset.mid, cur=(typeof p.ko[mid]==="object"&&p.ko[mid])?p.ko[mid]:{};
+    cur.adv=b.dataset.adv; p.ko[mid]=cur;
+    PROFILES=PROFILES.map(x=>x.id===p.id?p:x); DIRTY=true; MEUS_OPEN.mata=true; refresh();
+  });
+  const sb=$("#koSaveBtn",host); if(sb) sb.onclick=()=>save();
 }
 
 /* ---- Detalhe do jogo (modal) ---- */
@@ -930,13 +1171,29 @@ function renderMeus(){
       <div class="pl-right"><span class="pscore${has?'':' none'}">${has?`${pk.home} – ${pk.away}`:"—"}</span>${tag}</div></div>`;
   }).join("");
   $("#content").innerHTML=`
-    <div class="board" style="margin-bottom:20px; background:linear-gradient(135deg, #007A33 0%, #005A25 100%); color:white;"><div class="row">
+    <div class="board" style="margin-bottom:20px; background:linear-gradient(150deg,#16202F 0%,#0D1420 100%); border-color:rgba(191,242,52,.28); color:#EAF0F7;"><div class="row">
       <div class="who">${avatar(p, "av-white-border")}<div><div class="nm" style="color:white; font-size:20px;">${esc(p.name)}</div>
-        <div style="font-size:14px; color:#A7F3D0; margin-top:4px;">${s.played} jogos palpitados</div></div></div>
-      <div class="pts" style="color:#FDE047;">${fmtPts(s.total)}<small style="color:#A7F3D0;">pontos</small></div></div></div>
-    <div style="display:flex; justify-content:flex-end; margin-bottom:16px"><button class="btn primary" id="editMineBtn" style="width:100%; max-width:300px; padding:16px; font-size:16px;">Editar Meus Palpites ➔</button></div>
-    ${list}`;
+        <div style="font-size:14px; color:#9FB0C2; margin-top:4px;">${s.played} jogos palpitados</div></div></div>
+      <div class="pts" style="color:var(--signal);">${fmtPts(s.total)}<small style="color:#9FB0C2;">pontos</small></div></div></div>
+    <details class="acc"${MEUS_OPEN.grupos?' open':''} id="accGrupos"><summary><span>⚽ Palpites — Fase de grupos</span><span class="acc-ar">▾</span></summary>
+      <div class="acc-body">
+        <div style="display:flex; justify-content:flex-end; margin:4px 0 16px"><button class="btn primary" id="editMineBtn" style="width:100%; max-width:320px; padding:14px; font-size:15px;">Editar palpites de grupos ➔</button></div>
+        ${list}
+      </div></details>
+    <details class="acc"${MEUS_OPEN.mata?' open':''} id="accMata"><summary><span>🏆 Palpites — Mata-mata</span><span class="acc-ar">▾</span></summary>
+      <div class="acc-body"><div id="koEditor"></div></div></details>`;
   $("#editMineBtn").onclick=()=>openPickEditor();
+  $("#accGrupos").addEventListener("toggle",e=>{ MEUS_OPEN.grupos=e.currentTarget.open; });
+  $("#accMata").addEventListener("toggle",e=>{ MEUS_OPEN.mata=e.currentTarget.open; });
+  if($("#koEditor")){
+    if(R32T) fillKoEditor();
+    else { $("#koEditor").innerHTML='<div class="empty" style="margin:0">Carregando mata-mata…</div>';
+      loadR32Thirds().then(()=>{ if(VIEW==="meus") fillKoEditor(); }).catch(()=>{ const h=$("#koEditor"); if(h) h.innerHTML='<div class="empty" style="margin:0">Não consegui carregar o chaveamento.</div>'; }); }
+  }
+}
+function fillKoEditor(){
+  const host=$("#koEditor"), p=me(); if(!host||!p) return;
+  host.innerHTML=koEditorHtml(p.ko||{}); bindKoEditor();
 }
 function openPickEditor(){
   const p=me(); if(!p) return;
@@ -962,7 +1219,7 @@ function openPickEditor(){
         <img id="m-photo-preview" src="${esc(p.photo||"")}" style="width:48px; height:48px; border-radius:50%; object-fit:cover; margin-top:8px; display:${p.photo ? 'block' : 'none'}; border:2px solid var(--line);">
       </div>
     </div>
-    <p style="margin:12px 0 20px; font-size:14px; color:#9C4221; background:#FFFAF0; padding:12px; border-radius:8px; border:1px solid #FBD38D;">Atenção: Você só pode editar os jogos que ainda não começaram.</p>
+    <p style="margin:12px 0 20px; font-size:14px; color:#FFD08A; background:rgba(255,180,60,.10); padding:12px; border-radius:10px; border:1px solid rgba(255,180,60,.30);">Atenção: Você só pode editar os jogos que ainda não começaram.</p>
     ${rows}
     <div class="modal-actions"><button class="btn ghost" id="m-cancel" style="border:2px solid var(--line);">Cancelar</button><button class="btn primary" id="m-ok">Salvar Palpites</button></div>`;
   openModal();
