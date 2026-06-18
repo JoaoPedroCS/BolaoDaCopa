@@ -3,57 +3,45 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="color-scheme" content="light" />
-<meta name="supported-color-schemes" content="light" />
+<meta name="color-scheme" content="dark" />
+<meta name="supported-color-schemes" content="dark" />
 <title>Evolução dos Pontos · Bolão da Copa 2026</title>
 <link rel="icon" type="image/png" href="assets/favicon.png" />
 <link rel="apple-touch-icon" href="assets/icon-192.png" />
 <link rel="manifest" href="site.webmanifest" />
-<meta name="theme-color" content="#007A33" />
+<meta name="theme-color" content="#0A0E17" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- mesmo tema do app -->
+<link rel="stylesheet" href="assets/styles.css" />
 <style>
-  :root{
-    color-scheme: light only;
-    --pitch:#F4F7F6; --panel:#FFFFFF; --line:#E2E8F0; --chalk:#1A202C; --muted:#4A5568; --signal:#007A33;
-    --radius:16px; --font-base:'Inter',system-ui,sans-serif;
+  /* Ajustes específicos da página de evolução (o resto vem do styles.css) */
+  .wrap { max-width: 1000px; padding-bottom: 40px; }
+  .back {
+    display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px;
+    background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.22);
+    padding: 9px 15px; border-radius: 999px; font-weight: 700; font-size: 13px; text-decoration: none;
+    transition: .18s cubic-bezier(.2,.8,.2,1); backdrop-filter: blur(4px);
   }
-  *{box-sizing:border-box;}
-  body{margin:0;background-color:var(--pitch);color:var(--chalk);font-family:var(--font-base);}
-  .wrap{max-width:980px;margin:0 auto;padding:16px;}
-  header{
-    position:relative;border-radius:var(--radius);
-    background:linear-gradient(135deg,#005A25 0%,#007A33 100%);
-    padding:24px 20px;color:white;box-shadow:0 4px 12px rgba(0,122,51,0.15);
-  }
-  .eyebrow{font-size:13px;font-weight:600;text-transform:uppercase;color:#A7F3D0;}
-  h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(38px,9vw,64px);line-height:0.9;margin:8px 0 0;letter-spacing:1px;}
-  h1 .pop{color:#FDE047;}
-  .sub{color:#D1FAE5;font-size:14px;margin-top:10px;}
-  .back{
-    display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;
-    background:rgba(255,255,255,0.14);color:white;border:1px solid rgba(255,255,255,0.4);
-    padding:9px 16px;border-radius:12px;font-weight:600;font-size:14px;text-decoration:none;transition:.2s;
-  }
-  .back:hover{background:rgba(255,255,255,0.26);}
-  main{margin-top:20px;}
-  .chart-card{
-    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-    padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);
-  }
-  .chart-box{position:relative;width:100%;height:62vh;min-height:360px;}
-  .note{color:var(--muted);font-size:13px;margin:14px 4px 0;line-height:1.5;}
-  .empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:16px;}
-  .err{color:#B91C1C;}
+  .back:hover { background: rgba(191,242,52,.16); border-color: rgba(191,242,52,.5); }
+  main { margin-top: 22px; }
+  .chart-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-card); }
+  .chart-box { position: relative; width: 100%; height: 62vh; min-height: 360px; }
+  .note { color: var(--muted); font-size: 13px; margin: 16px 4px 0; line-height: 1.55; }
+  .note b { color: var(--chalk); }
+  .err { color: #FF6B6B; }
+  .empty.err { color: #FF6B6B; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
+    <div class="header-glow" aria-hidden="true"></div>
+    <div class="header-stripes" aria-hidden="true"></div>
     <a class="back" href="index.html">← Voltar ao Bolão</a>
-    <div class="eyebrow">Fase de grupos · Copa 2026</div>
+    <div class="eyebrow"><span class="dot"></span> Fase de grupos · Copa 2026</div>
     <h1>Evolução <span class="pop">dos Pontos</span></h1>
     <div class="sub" id="info">Carregando dados…</div>
   </header>
@@ -73,6 +61,13 @@ const CONFIG = {
   matchesUrl: "https://bolao-jogos.joaohulck.workers.dev/"
 };
 
+/* Tema escuro pro Chart.js (eixos, grade e legenda legíveis no fundo escuro). */
+if(window.Chart){
+  Chart.defaults.color = "#8B99AC";
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.borderColor = "rgba(255,255,255,0.08)";
+}
+
 /* Mesma regra de pontuação do bolão. */
 function pointsFor(pick,ah,aa){
   if(!pick||pick.home==null||pick.away==null) return 0;
@@ -85,8 +80,8 @@ function pointsFor(pick,ah,aa){
 }
 const fmtPts=(n)=>Number.isInteger(n)?String(n):String(n).replace(".",",");
 
-/* 10 cores bem distintas (uma por palpiteiro). */
-const PALETTE=["#e6194B","#3cb44b","#4363d8","#f58231","#911eb4","#008080","#f032e6","#9A6324","#808000","#000075"];
+/* 10 cores vivas e distintas (uma por palpiteiro), calibradas pro fundo escuro. */
+const PALETTE=["#BFF234","#FF6B6B","#4DABF7","#FFD43B","#B197FC","#3BC9DB","#FF8CC8","#69DB7C","#FFA94D","#9775FA"];
 
 async function loadMatches(){
   const base=CONFIG.matchesUrl||"data/matches.json";
@@ -165,8 +160,10 @@ function build(MATCHES, PROFILES){
       responsive:true, maintainAspectRatio:false,
       interaction:{ mode:"nearest", intersect:false },
       plugins:{
-        legend:{ position:"top", labels:{ usePointStyle:true, boxWidth:8, font:{ size:12 } } },
+        legend:{ position:"top", labels:{ usePointStyle:true, boxWidth:8, color:"#EAF0F7", font:{ size:12 } } },
         tooltip:{
+          backgroundColor:"#0F1622", borderColor:"#2A3645", borderWidth:1,
+          titleColor:"#EAF0F7", bodyColor:"#EAF0F7", padding:10,
           callbacks:{
             title:(items)=> desc[items[0].dataIndex] || "",
             label:(it)=> `${it.dataset.label.replace("★ ","")}: ${fmtPts(it.parsed.y)} pts`
@@ -174,8 +171,8 @@ function build(MATCHES, PROFILES){
         }
       },
       scales:{
-        y:{ beginAtZero:true, title:{ display:true, text:"Pontos acumulados" }, ticks:{ precision:0 } },
-        x:{ title:{ display:true, text:"Jogos (em ordem)" }, ticks:{ autoSkip:true, maxTicksLimit:14 } }
+        y:{ beginAtZero:true, title:{ display:true, text:"Pontos acumulados", color:"#EAF0F7" }, ticks:{ precision:0, color:"#8B99AC" }, grid:{ color:"rgba(255,255,255,0.07)" } },
+        x:{ title:{ display:true, text:"Jogos (em ordem)", color:"#EAF0F7" }, ticks:{ autoSkip:true, maxTicksLimit:14, color:"#8B99AC" }, grid:{ color:"rgba(255,255,255,0.05)" } }
       }
     }
   });

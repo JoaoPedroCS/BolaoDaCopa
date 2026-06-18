@@ -11,20 +11,19 @@
 
 ---
 
-## 1. Separar o mata-mata num módulo próprio (Playoffs)
+## 1. Separar o mata-mata num módulo próprio (Playoffs) — ✅ FEITO
 
-Transformar o mata-mata num "mundo paralelo" à fase de grupos, com tudo dele independente:
+Implementado como **seletor no topo "Fase de Grupos | Playoffs"** (`#modebar`) que troca todo o conjunto de abas, numa página só (compartilhando perfis/dados/JsonBin).
 
-- **Palpites próprios** — editor de KO separado dos palpites de grupo (a base já existe em `profile.ko`).
-- **Ranking próprio** — leaderboard só do mata-mata, independente do ranking de grupos.
-- **Partidas próprias** — lista dos jogos de playoff (16-avos → final), separada da aba Jogos dos grupos.
-- **Regras de pontuação próprias** — definir como o KO pontua (ex.: acertar quem avança, placar exato, acertar os pênaltis). Hoje o KO **não** pontua.
-- **Tabela própria** = o bracket de playoffs (a aba Mata-mata atual vira a "tabela" desse módulo).
+- **Fase de Grupos**: Ranking · Jogos · Tabela · Palpiteiros · Meus Palpites.
+- **Playoffs**: Ranking · Partidas · Chaveamento · Palpiteiros · Meus Palpites — todos próprios.
+  - **Palpites próprios** (`renderKoMeus` → editor de placares do KO).
+  - **Ranking próprio** (`renderKoRanking` + `koStatsFor`/`koRanking`): mostra campeão cravado e nº de palpites; **pontuação a definir** (ver abaixo).
+  - **Partidas próprias** (`renderKoPartidas`): por fase (16-avos → final) com filtro; 16-avos projetados pela classificação atual, resto "A definir".
+  - **Chaveamento** = o bracket com zoom/arrasto (`renderMataMata`).
+  - **Palpiteiros** (`renderKoPerfis` + `openKoProfile`): campeão e bracket de cada um.
 
-**Sugestão de implementação**
-
-- Um seletor no topo **"Fase de Grupos | Playoffs"** que troca todo o conjunto de abas, **ou** uma página separada (`playoffs.html`) espelhando a estrutura do `index.html`.
-- Dados: guardar os resultados reais do KO nos jogos 73–104 (quando existirem); criar uma `scoreKnockout()` própria; ranking de KO calculado de `profile.ko` × resultados reais.
+**Pendente**: definir as **regras de pontuação do KO** (`scoreKnockout()` hoje devolve `null` = não pontua). Quando definir, o ranking de playoffs passa a valer automaticamente. Guardar os resultados reais dos jogos 73–104 quando existirem (o worker hoje só traz a fase de grupos).
 
 ---
 

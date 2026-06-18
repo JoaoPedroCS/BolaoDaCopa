@@ -48,9 +48,12 @@ const CONFIG = {
 /* ---------- Estado ---------- */
 let MATCHES=[], PROFILES=[], LIVE=null;
 let VIEW="ranking";
+let MODE="grupos";   // "grupos" | "playoffs" — alterna todo o conjunto de abas
+let KO_PHASE=0, KO_PHASE_AUTO=true;   // fase atual na aba Partidas do mata-mata
 let GROUP_FILTER="ALL";
 let JOGOS_ROUND="ALL";
 let JOGOS_ROUND_AUTO=true;   // enquanto true, o filtro de rodada segue sozinho a 1a fase com jogos pendentes
+let SHOW_CURRENT=true;       // mostra o card do "jogo atual" (ao vivo/próximo) no topo da aba Jogos
 let IDENTITY=localStorage.getItem("bolao_identity")||null; 
 let DIRTY=false, ENTRY_LOCK=false;
 
@@ -116,7 +119,7 @@ function renderIdentBar(){
 
 function openEntry(force){
   ENTRY_LOCK = !IDENTITY || !!force ? true : false;
-  const profs = PROFILES.map(p=>`<button class="entry-prof" data-id="${esc(p.id)}">${avatar(p,"")}<span class="nm">${esc(p.name)}</span></button>`).join("");
+  const profs = PROFILES.slice().sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(p=>`<button class="entry-prof" data-id="${esc(p.id)}">${avatar(p,"")}<span class="nm">${esc(p.name)}</span></button>`).join("");
   $("#modal").innerHTML = `
     ${IDENTITY?'<button class="x" id="m-x">✕</button>':''}
     <h3>Quem é você?</h3>
@@ -204,7 +207,7 @@ async function loadAll(){
   try{
     await Promise.all([loadMatches(),loadPredictions()]);
     await loadLive(); applyLive();
-    renderIdentBar(); buildTabs();
+    renderIdentBar(); buildModeBar(); buildTabs();
     if(!IDENTITY) openEntry(true); else render();
   }catch(e){
     $("#content").innerHTML=`<div class="empty">Não consegui carregar os dados. Verifique sua conexão.</div>`;
@@ -250,22 +253,59 @@ function firstPendingRound(){
   for(const r of rounds){ if(MATCHES.some(m=>m.round===r && m.status!=="FINISHED")) return r; }
   return rounds[rounds.length-1];   // tudo encerrado -> mostra a ultima rodada
 }
+// Jogo "atual": o que está AO VIVO; senão, o próximo a acontecer (não finalizado). null se acabou tudo.
+function currentMatch(){
+  const cand=MATCHES.filter(m=>m.status!=="FINISHED");
+  if(!cand.length) return null;
+  cand.sort((a,b)=>{
+    const la=a.status==="IN_PLAY"?0:1, lb=b.status==="IN_PLAY"?0:1;
+    if(la!==lb) return la-lb;                        // ao vivo primeiro
+    return new Date(a.utcDate)-new Date(b.utcDate);  // depois, o mais próximo no tempo
+  });
+  return cand[0];
+}
 
 /* ============================================================ TABS */
+const TABS={
+  grupos:[["ranking","Ranking"],["jogos","Jogos"],["tabela","Tabela"],["perfis","Palpiteiros"],["meus","Meus Palpites"]],
+  playoffs:[["ranking","Ranking"],["partidas","Partidas"],["chave","Chaveamento"],["perfis","Palpiteiros"],["meus","Meus Palpites"]]
+};
+function buildModeBar(){
+  const mb=$("#modebar");
+  if(mb){
+    const modes=[["grupos","Fase de Grupos"],["playoffs","Playoffs"]];
+    mb.innerHTML=modes.map(([m,l])=>`<button class="modebtn" data-mode="${m}" aria-selected="${MODE===m}">${l}</button>`).join("");
+    $$(".modebtn",mb).forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+  }
+  const eb=$("#eyebrow");
+  if(eb) eb.innerHTML='<span class="dot"></span> '+(MODE==="playoffs"?"Mata-mata · Copa 2026":"Fase de grupos · Copa 2026");
+}
+function setMode(m){
+  if(MODE===m) return;
+  MODE=m; VIEW="ranking"; JOGOS_ROUND_AUTO=true; KO_PHASE_AUTO=true;
+  buildModeBar(); buildTabs(); render();
+}
 function buildTabs(){
-  const base=[["ranking","Ranking"],["jogos","Jogos"],["tabela","Tabela"],["matamata","Mata-mata"],["perfis","Palpiteiros"]];
-  if(me()) base.push(["meus","Meus Palpites"]);
-  if(!base.find(t=>t[0]===VIEW)) VIEW="ranking";
+  let base=TABS[MODE].slice();
+  if(!me()) base=base.filter(t=>t[0]!=="meus");
+  if(!base.find(t=>t[0]===VIEW)) VIEW=base[0][0];
   $("#tabs").innerHTML=base.map(([v,l])=>`<button class="tab" role="tab" data-view="${v}" aria-selected="${VIEW===v}">${l}</button>`).join("");
   $$(".tab").forEach(t=>t.onclick=()=>{ VIEW=t.dataset.view; buildTabs(); render(); });
 }
 
 /* ============================================================ RENDER DISPATCH */
 function render(){
+  if(MODE==="playoffs"){
+    if(VIEW==="ranking") renderKoRanking();
+    else if(VIEW==="partidas") renderKoPartidas();
+    else if(VIEW==="chave") renderMataMata();
+    else if(VIEW==="perfis") renderKoPerfis();
+    else if(VIEW==="meus") renderKoMeus();
+    return;
+  }
   if(VIEW==="ranking") renderRanking();
   else if(VIEW==="jogos") renderJogos();
   else if(VIEW==="tabela") renderTabela();
-  else if(VIEW==="matamata") renderMataMata();
   else if(VIEW==="perfis") renderPerfis();
   else if(VIEW==="meus") renderMeus();
 }
@@ -278,7 +318,7 @@ function renderRanking(){
     const cls=(i===0?"r1":i===1?"r2":i===2?"r3":"")+(me()&&me().id===e.prof.id?" me":"");
     const tag=me()&&me().id===e.prof.id?`<span class="youtag">Você</span>`:"";
     const nameHtml = i===0
-      ? `<span class="flame-name" data-text="${esc(e.prof.name)}">${esc(e.prof.name)}<span class="torch">\u{1F525}</span></span>`
+      ? `<span class="flame-name" data-text="${esc(e.prof.name)}">${esc(e.prof.name)}</span><span class="flame-torch">\u{1F525}</span>`
       : esc(e.prof.name);
     
     // Novo Visual de Metadados (Bolinhas)
@@ -293,7 +333,7 @@ function renderRanking(){
 
     return `<div class="row ${cls}">
       <div class="rank">${i+1}</div>
-      <div class="who">${avatar(e.prof)}<div style="min-width:0"><div class="nm"${i===0?' style="overflow:visible;padding-right:26px"':''}>${nameHtml}${tag}</div>
+      <div class="who">${avatar(e.prof)}<div style="min-width:0"><div class="nm${i===0?' flame-host':''}">${nameHtml}${tag}</div>
         ${badges}</div></div>
       <div class="pts">${fmtPts(e.total)}<small>pontos</small></div>
     </div>`;
@@ -310,9 +350,19 @@ function renderJogos(){
     .concat(rounds.map(r=>`<button class="chip" data-r="${r}" aria-pressed="${JOGOS_ROUND===r}">Rodada ${r}</button>`)).join("");
   const gchips=[`<button class="chip" data-g="ALL" aria-pressed="${GROUP_FILTER==='ALL'}">Todos os Grupos</button>`]
     .concat(groups.map(g=>`<button class="chip" data-g="${g}" aria-pressed="${GROUP_FILTER===g}">Grupo ${g}</button>`)).join("");
-  const list=MATCHES.filter(m=>(GROUP_FILTER==="ALL"||m.group===GROUP_FILTER)&&(JOGOS_ROUND==="ALL"||m.round===JOGOS_ROUND));
-  let html=`<div class="filters">${rchips}</div><div class="filters">${gchips}</div>`;
-  if(!list.length) html+=`<div class="empty">Sem jogos neste filtro.</div>`;
+  const cur=currentMatch();
+  const showCur = SHOW_CURRENT && !!cur;
+  // o card em destaque sai da lista de baixo (pra não aparecer duplicado)
+  const list=MATCHES.filter(m=>(GROUP_FILTER==="ALL"||m.group===GROUP_FILTER)&&(JOGOS_ROUND==="ALL"||m.round===JOGOS_ROUND)&&!(showCur&&m.id===cur.id));
+  // chip liga/desliga o destaque (só aparece se ainda houver jogo em aberto)
+  const curChip = cur ? `<div class="filters"><button class="chip" id="curToggle" aria-pressed="${SHOW_CURRENT}">${SHOW_CURRENT?'✓ ':''}Jogo atual</button></div>` : "";
+  let curHtml="";
+  if(showCur){
+    const live=cur.status==="IN_PLAY";
+    curHtml=`<div class="cur-card${live?' live':''}"><div class="cur-head${live?' live':''}">${live?'<span class="cur-dot"></span> Ao vivo agora':'⏱ Próximo jogo'}</div>${matchCard(cur)}</div>`;
+  }
+  let html=`<div class="filters">${rchips}</div><div class="filters">${gchips}</div>${curChip}${curHtml}`;
+  if(!list.length && !showCur) html+=`<div class="empty">Sem jogos neste filtro.</div>`;
   else for(const r of rounds){
     const inR=list.filter(m=>m.round===r);
     if(!inR.length) continue;
@@ -321,6 +371,7 @@ function renderJogos(){
   $("#content").innerHTML=html;
   $$(".chip[data-r]").forEach(c=>c.onclick=()=>{ JOGOS_ROUND_AUTO=false; JOGOS_ROUND=c.dataset.r==="ALL"?"ALL":+c.dataset.r; renderJogos(); });
   $$(".chip[data-g]").forEach(c=>c.onclick=()=>{ GROUP_FILTER=c.dataset.g; renderJogos(); });
+  if($("#curToggle")) $("#curToggle").onclick=()=>{ SHOW_CURRENT=!SHOW_CURRENT; renderJogos(); };
   $$(".match").forEach(el=>el.onclick=()=>openMatch(el.dataset.id));
 }
 function matchCard(m){
@@ -502,7 +553,7 @@ async function renderMataMata(){
   if(!R32T){
     $("#content").innerHTML=`<div class="empty">Carregando chaveamento…</div>`;
     try{ await loadR32Thirds(); }catch(e){ $("#content").innerHTML=`<div class="empty">Não consegui carregar o chaveamento. Tente recarregar a página.</div>`; return; }
-    if(VIEW!=="matamata") return;
+    if(MODE!=="playoffs"||VIEW!=="chave") return;
   }
   const M=koResolveProjection(), last=KO_BRACKET_COLS.length-1;
   const cols=KO_BRACKET_COLS.map((col,ci)=>{
@@ -573,6 +624,129 @@ function bindKoEditor(){
   const sb=$("#koSaveBtn",host); if(sb) sb.onclick=()=>save();
 }
 
+/* ============================================================ PLAYOFFS (modo mata-mata) */
+const KO_PHASES=[
+  ["16-avos",[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88]],
+  ["Oitavas",[89,90,91,92,93,94,95,96]],
+  ["Quartas",[97,98,99,100]],
+  ["Semifinais",[101,102]],
+  ["Final",[104]]
+];
+const KO_ALL_IDS=[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,104];
+// Garante o Anexo C carregado antes dos renders que dependem do chaveamento.
+function ensureR32(cb){
+  if(R32T){ cb(); return; }
+  $("#content").innerHTML=`<div class="empty">Carregando chaveamento…</div>`;
+  loadR32Thirds().then(()=>{ if(MODE==="playoffs") cb(); }).catch(()=>{ $("#content").innerHTML=`<div class="empty">Não consegui carregar o chaveamento. Tente recarregar a página.</div>`; });
+}
+// Pontuação do mata-mata: A DEFINIR (e ainda não há resultados de KO). Devolve null = não pontua.
+// Quando definir a regra, é só implementar aqui que o ranking de playoffs passa a valer.
+function scoreKnockout(prof){ return null; }
+function koStatsFor(prof){
+  const ko=prof.ko||{};
+  let picks=0;
+  for(const mid of KO_ALL_IDS){ const pk=ko[mid]; if(pk&&typeof pk==="object"&&pk.h!=null&&pk.a!=null) picks++; }
+  const M=koResolvePicks(ko), ch=koWinner(M[104], ko[104]);
+  return { picks, champ: ch?ch.name:null, pts: scoreKnockout(prof) };
+}
+function koRanking(){
+  return PROFILES.map(p=>({prof:p, ...koStatsFor(p)}))
+    .sort((a,b)=> (b.pts||0)-(a.pts||0) || b.picks-a.picks || a.prof.name.localeCompare(b.prof.name,"pt"));
+}
+
+/* ---- Playoffs: Ranking ---- */
+function renderKoRanking(){
+  if(!R32T) return ensureR32(renderKoRanking);
+  if(!PROFILES.length){ $("#content").innerHTML=`<div class="empty">Nenhum palpiteiro cadastrado.</div>`; return; }
+  const rk=koRanking();
+  const note=`<div class="ko-note">A <b>pontuação do mata-mata ainda não foi definida</b> — este ranking passa a valer quando os jogos do KO começarem. Por enquanto mostra o campeão cravado e quantos jogos cada um já palpitou.</div>`;
+  const rows=rk.map((e,i)=>{
+    const mine=me()&&me().id===e.prof.id;
+    const cls=(i===0?"r1":i===1?"r2":i===2?"r3":"")+(mine?" me":"");
+    const champ=e.champ?`<span class="ko-champ-mini">🏆 ${esc(e.champ)}</span>`:`<span style="color:var(--muted);font-size:13px">sem campeão</span>`;
+    return `<div class="row ${cls}">
+      <div class="rank">${i+1}</div>
+      <div class="who">${avatar(e.prof)}<div style="min-width:0"><div class="nm">${esc(e.prof.name)}${mine?'<span class="youtag">Você</span>':''}</div>
+        <div class="badge-row">${champ}<span style="font-size:13px;color:var(--muted);margin-left:4px">${e.picks} palpites</span></div></div></div>
+      <div class="pts">${e.pts==null?'—':fmtPts(e.pts)}<small>${e.pts==null?'a definir':'pontos'}</small></div>
+    </div>`;
+  }).join("");
+  $("#content").innerHTML=note+`<div class="board"><div class="row head"><div>#</div><div>Palpiteiro</div><div style="text-align:right">Pts</div></div>${rows}</div>`;
+}
+
+/* ---- Playoffs: Partidas (por fase, projetadas) ---- */
+function koFixtureCard(mid, teams){
+  const a=teams&&teams[0], b=teams&&teams[1];
+  const tn=(t)=> t?`<span class="tn">${esc(t.name)}</span>`:`<span class="tn" style="color:var(--muted);font-weight:600">A definir</span>`;
+  const fl=(t)=> `<img src="${esc((t&&t.crest)||'')}" alt="" style="${t&&t.crest?'':'visibility:hidden'}" onerror="this.style.visibility='hidden'">`;
+  return `<div class="match" style="cursor:default">
+    <div class="top"><span class="g">Jogo ${mid}</span><span class="status">A jogar</span></div>
+    <div class="scoreline">
+      <div class="team home">${fl(a)}${tn(a)}</div>
+      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">–</span><span class="vs">×</span><span class="bignum">–</span></div>
+      <div class="team away">${tn(b)}${fl(b)}</div>
+    </div></div>`;
+}
+function renderKoPartidas(){
+  if(!R32T) return ensureR32(renderKoPartidas);
+  const M=koResolveProjection();
+  if(KO_PHASE_AUTO){   // 1a fase com confronto definido (hoje: 16-avos, pois não há resultados de KO)
+    KO_PHASE=0;
+    for(let i=0;i<KO_PHASES.length;i++){ if(KO_PHASES[i][1].some(mid=>M[mid]&&M[mid][0]&&M[mid][1])){ KO_PHASE=i; break; } }
+  }
+  const chips=KO_PHASES.map((p,i)=>`<button class="chip" data-ph="${i}" aria-pressed="${KO_PHASE===i}">${esc(p[0])}</button>`).join("");
+  const [label,ids]=KO_PHASES[KO_PHASE];
+  const cards=ids.map(mid=>koFixtureCard(mid, M[mid])).join("");
+  $("#content").innerHTML=`<div class="ko-note">Partidas do mata-mata por fase. Os 16-avos vêm da classificação atual (projeção); as fases seguintes aparecem conforme os jogos acontecem.</div>
+    <div class="filters">${chips}</div>
+    <div class="roundhead" style="margin-top:8px">${esc(label)}</div>${cards}`;
+  $$(".chip[data-ph]").forEach(c=>c.onclick=()=>{ KO_PHASE_AUTO=false; KO_PHASE=+c.dataset.ph; renderKoPartidas(); });
+}
+
+/* ---- Playoffs: Palpiteiros ---- */
+function renderKoPerfis(){
+  if(!R32T) return ensureR32(renderKoPerfis);
+  if(!PROFILES.length){ $("#content").innerHTML=`<div class="empty">Nenhum palpiteiro cadastrado.</div>`; return; }
+  const cards=PROFILES.slice().sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(p=>{
+    const s=koStatsFor(p); const mine=me()&&me().id===p.id;
+    return `<div class="pcard${mine?' me':''}" data-id="${esc(p.id)}">${avatar(p)}
+      <div style="min-width:0"><div class="nm">${esc(p.name)}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--signal);margin-top:4px">${s.champ?'🏆 '+esc(s.champ):'sem campeão'}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">${s.picks} palpites no mata-mata</div></div></div>`;
+  }).join("");
+  $("#content").innerHTML=`<div class="pgrid">${cards}</div>`;
+  $$(".pcard").forEach(el=>el.onclick=()=>openKoProfile(el.dataset.id));
+}
+function openKoProfile(id){
+  const p=profileById(id); if(!p) return;
+  const ko=p.ko||{}, M=koResolvePicks(ko);
+  const body=KO_ROUNDS.map(([label,ids])=>{
+    const rows=ids.map(mid=>{
+      const A=M[mid][0], B=M[mid][1]; if(!A||!B) return "";
+      const pk=(typeof ko[mid]==="object")?ko[mid]:null;
+      let sc="—";
+      if(pk&&pk.h!=null&&pk.a!=null){ sc=`${pk.h} – ${pk.a}`; if(+pk.h===+pk.a&&pk.adv) sc+=` <span style="color:var(--muted)">(pen: ${pk.adv==='home'?esc(A.name):esc(B.name)})</span>`; }
+      return `<div class="pick-line"><div class="pl-who"><span class="nm" style="font-size:14px">${esc(A.name)} <span class="vs">×</span> ${esc(B.name)}</span></div>
+        <div class="pl-right"><span class="pscore${pk?'':' none'}">${sc}</span></div></div>`;
+    }).filter(Boolean).join("");
+    return rows?`<div class="ke-round">${label}</div>${rows}`:"";
+  }).join("") || `<div class="empty">Sem palpites de mata-mata ainda.</div>`;
+  const ch=koWinner(M[104], ko[104]);
+  $("#modal").innerHTML=`<button class="x" id="m-x">✕</button>
+    <div class="mhead">${avatar(p)}<div><h3 style="padding:0">${esc(p.name)}</h3>
+      <div style="color:var(--signal);font-size:15px;font-weight:700">${ch?'🏆 Campeão: '+esc(ch.name):'Sem campeão definido'}</div></div></div>
+    ${body}`;
+  openModal(); $("#m-x").onclick=()=>closeModal();
+}
+
+/* ---- Playoffs: Meus Palpites (editor de placares do KO) ---- */
+function renderKoMeus(){
+  const p=me(); if(!p){ VIEW="ranking"; buildTabs(); render(); return; }
+  if(!R32T) return ensureR32(renderKoMeus);
+  $("#content").innerHTML=`<div id="koEditor"></div>`;
+  fillKoEditor();
+}
+
 /* ---- Detalhe do jogo (modal) ---- */
 function openMatch(id){
   const m=MATCHES.find(x=>x.id===id); if(!m) return;
@@ -584,20 +758,20 @@ function openMatch(id){
     const psc=live?partialScore(pk,m):null;   // parcial ao vivo (nao conta no ranking)
     return {p,pk,sc,psc,has:!!(pk&&pk.home!=null)};
   });
-  if(fin) rows.sort((a,b)=> (b.sc??-1)-(a.sc??-1) || a.p.name.localeCompare(b.p.name,"pt"));
-  else if(live) rows.sort((a,b)=> (b.psc??-1)-(a.psc??-1) || a.p.name.localeCompare(b.p.name,"pt"));
-  else rows.sort((a,b)=>{
-    // Jogo ainda nao aconteceu: ordena os palpites por resultado previsto.
-    // Topo: maiores vitorias da casa - Meio: empates - Base: maiores vitorias do visitante.
-    // Desempate 1: saldo de gols - Desempate 2: gols totais - Desempate 3: nome.
-    if(a.has!==b.has) return b.has-a.has;                       // quem palpitou vem antes de quem nao palpitou
-    if(!a.has) return a.p.name.localeCompare(b.p.name,"pt");    // ambos sem palpite
-    const sa=a.pk.home-a.pk.away, sb=b.pk.home-b.pk.away;       // saldo de gols (positivo = vitoria casa)
-    if(sb!==sa) return sb-sa;                                   // saldo desc: casa no topo, fora na base
-    const ta=a.pk.home+a.pk.away, tb=b.pk.home+b.pk.away;       // gols totais
+  // Desempate pelo PLACAR palpitado: maior vitória da casa no topo -> maior vitória do
+  // visitante na base. Saldo (casa-fora) desc -> total de gols desc -> mesmo placar = alfabético.
+  function cmpByPick(a,b){
+    if(a.has!==b.has) return b.has-a.has;                       // quem palpitou vem antes de quem não palpitou
+    if(!a.has) return a.p.name.localeCompare(b.p.name,"pt");    // ambos sem palpite -> alfabético
+    const sa=(+a.pk.home)-(+a.pk.away), sb=(+b.pk.home)-(+b.pk.away);
+    if(sb!==sa) return sb-sa;                                   // saldo desc (casa ganha mais no topo)
+    const ta=(+a.pk.home)+(+a.pk.away), tb=(+b.pk.home)+(+b.pk.away);
     if(tb!==ta) return tb-ta;                                   // mais gols primeiro
-    return a.p.name.localeCompare(b.p.name,"pt");
-  });
+    return a.p.name.localeCompare(b.p.name,"pt");               // mesmo placar -> alfabético
+  }
+  if(fin) rows.sort((a,b)=> (b.sc??-1)-(a.sc??-1) || cmpByPick(a,b));         // pontos desc, depois placar
+  else if(live) rows.sort((a,b)=> (b.psc??-1)-(a.psc??-1) || cmpByPick(a,b)); // parcial desc, depois placar
+  else rows.sort(cmpByPick);                                                  // ainda sem pontos: só o placar
   const ranked=fin||live;   // listas pontuadas mostram posicao (1o, 2o...)
   const list=rows.map((r,i)=>{
     const scoreTxt=r.has?`${r.pk.home} – ${r.pk.away}`:"—";
@@ -632,7 +806,7 @@ function openMatch(id){
 /* ---- Palpiteiros ---- */
 function renderPerfis(){
   if(!PROFILES.length){ $("#content").innerHTML=`<div class="empty">Nenhum palpiteiro cadastrado.</div>`; return; }
-  const cards=PROFILES.map(p=>{
+  const cards=PROFILES.slice().sort((a,b)=>a.name.localeCompare(b.name,"pt")).map(p=>{
     const s=statsFor(p); const mine=me()&&me().id===p.id;
     
     const badges = `
@@ -703,21 +877,9 @@ function renderMeus(){
       <div class="who">${avatar(p, "av-white-border")}<div><div class="nm" style="color:white; font-size:20px;">${esc(p.name)}</div>
         <div style="font-size:14px; color:#9FB0C2; margin-top:4px;">${s.played} jogos palpitados</div></div></div>
       <div class="pts" style="color:var(--signal);">${fmtPts(s.total)}<small style="color:#9FB0C2;">pontos</small></div></div></div>
-    <details class="acc"${MEUS_OPEN.grupos?' open':''} id="accGrupos"><summary><span>⚽ Palpites — Fase de grupos</span><span class="acc-ar">▾</span></summary>
-      <div class="acc-body">
-        <div style="display:flex; justify-content:flex-end; margin:4px 0 16px"><button class="btn primary" id="editMineBtn" style="width:100%; max-width:320px; padding:14px; font-size:15px;">Editar palpites de grupos ➔</button></div>
-        ${list}
-      </div></details>
-    <details class="acc"${MEUS_OPEN.mata?' open':''} id="accMata"><summary><span>🏆 Palpites — Mata-mata</span><span class="acc-ar">▾</span></summary>
-      <div class="acc-body"><div id="koEditor"></div></div></details>`;
+    <div style="display:flex; justify-content:flex-end; margin-bottom:16px"><button class="btn primary" id="editMineBtn" style="width:100%; max-width:320px; padding:14px; font-size:15px;">Editar meus palpites ➔</button></div>
+    ${list}`;
   $("#editMineBtn").onclick=()=>openPickEditor();
-  $("#accGrupos").addEventListener("toggle",e=>{ MEUS_OPEN.grupos=e.currentTarget.open; });
-  $("#accMata").addEventListener("toggle",e=>{ MEUS_OPEN.mata=e.currentTarget.open; });
-  if($("#koEditor")){
-    if(R32T) fillKoEditor();
-    else { $("#koEditor").innerHTML='<div class="empty" style="margin:0">Carregando mata-mata…</div>';
-      loadR32Thirds().then(()=>{ if(VIEW==="meus") fillKoEditor(); }).catch(()=>{ const h=$("#koEditor"); if(h) h.innerHTML='<div class="empty" style="margin:0">Não consegui carregar o chaveamento.</div>'; }); }
-  }
 }
 function fillKoEditor(){
   const host=$("#koEditor"), p=me(); if(!host||!p) return;

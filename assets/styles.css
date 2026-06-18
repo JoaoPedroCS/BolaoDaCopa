@@ -40,6 +40,7 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;   /* trava qualquer rolagem horizontal acidental no mobile */
   }
   body::before {
     content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
@@ -102,9 +103,10 @@
   .sub { color: #AEBBCA; font-size: 13.5px; font-weight: 500; margin-top: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
   .identbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.10); }
-  .identbar .who-am { display: flex; align-items: center; gap: 11px; font-size: 15px; }
-  .identbar .who-am .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--signal); font-weight: 700; }
-  .identbar .who-am .nm { font-weight: 800; font-size: 16px; color: #fff; }
+  .identbar .who-am { display: flex; align-items: center; gap: 11px; font-size: 15px; min-width: 0; }
+  .identbar .who-am .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--signal); font-weight: 700; white-space: nowrap; }
+  .identbar .who-am .nm { font-weight: 800; font-size: 16px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .identbar #switchBtn { flex: none; white-space: nowrap; }
 
   /* ===== Abas — placar com sublinhado luminoso ===== */
   nav.tabs { display: flex; gap: 2px; margin: 26px 0 22px; border-bottom: 1.5px solid var(--line); overflow-x: auto; scrollbar-width: none; }
@@ -219,9 +221,11 @@
     animation: flameWaft .9s ease-in-out infinite alternate;
   }
   /* tocha viva ao lado do nome */
-  .flame-name .torch {
-    position: absolute; right: -26px; top: 50%; transform: translateY(-50%);
-    font-size: .9em; -webkit-text-fill-color: initial;
+  /* host do nome do líder: no desktop deixa o fogo "vazar"; no mobile é cortado (vide media query) */
+  .nm.flame-host { overflow: visible; }
+  /* tocha INLINE ao lado do nome — não usa posição absoluta, então nunca cobre a coluna de pontos */
+  .flame-torch {
+    display: inline-block; margin-left: 5px; font-size: .92em; -webkit-text-fill-color: initial;
     filter: drop-shadow(0 0 6px rgba(255,140,40,.9)) drop-shadow(0 -3px 10px rgba(255,90,20,.7));
     animation: torchDance .5s ease-in-out infinite alternate;
   }
@@ -241,9 +245,9 @@
     100% { opacity: .55; transform: translateY(-5px) scaleY(1.2) skewX(-1deg); }
   }
   @keyframes torchDance {
-    0%   { transform: translateY(-48%) rotate(-5deg) scale(1); }
-    50%  { transform: translateY(-52%) rotate(4deg) scale(1.12); }
-    100% { transform: translateY(-50%) rotate(-3deg) scale(1.05); }
+    0%   { transform: rotate(-6deg) scale(1); }
+    50%  { transform: rotate(5deg) scale(1.12); }
+    100% { transform: rotate(-3deg) scale(1.05); }
   }
 
   /* ===== Cards de jogos ===== */
@@ -422,6 +426,21 @@
   .kb-team.tbd { color: var(--muted); font-weight: 500; font-style: italic; }
   .kb-join { position: absolute; left: calc(-1 * var(--hg)); top: 50%; transform: translateY(-50%); width: var(--hg); height: var(--conn, 0); border: 2px solid var(--line); border-right: none; border-radius: 5px 0 0 5px; }
 
+  /* ===== Seletor de modo (Fase de Grupos | Playoffs) ===== */
+  .modebar { display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px; margin: 22px 0 2px; box-shadow: var(--shadow-card); }
+  .modebtn { flex: 1; appearance: none; border: none; background: transparent; color: var(--muted); font-family: var(--font-base); font-weight: 800; font-size: 14px; letter-spacing: .3px; padding: 11px 14px; border-radius: 999px; cursor: pointer; transition: .18s cubic-bezier(.2,.8,.2,1); }
+  .modebtn[aria-selected="true"] { background: var(--signal); color: var(--signal-deep); box-shadow: 0 6px 18px rgba(191,242,52,.3); }
+  .modebtn:not([aria-selected="true"]):hover { color: var(--chalk); }
+  .ko-champ-mini { font-size: 13px; font-weight: 800; color: var(--gold); }
+
+  /* ===== Jogo atual em destaque (aba Jogos) ===== */
+  .cur-card { margin-bottom: 20px; }
+  .cur-card .match { border-color: rgba(191,242,52,.45); box-shadow: 0 0 0 1px rgba(191,242,52,.22), var(--shadow-card); }
+  .cur-card.live .match { border-color: rgba(255,77,94,.5); box-shadow: 0 0 0 1px rgba(255,77,94,.3), var(--shadow-card); }
+  .cur-head { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 400; font-size: 19px; letter-spacing: .8px; text-transform: uppercase; color: var(--signal); margin: 2px 0 10px; }
+  .cur-head.live { color: var(--live); }
+  .cur-head .cur-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 4px rgba(255,77,94,.2), 0 0 12px var(--live); animation: livePulse 1.6s ease-in-out infinite; }
+
   .hidden { display: none !important; }
 
   @media (min-width: 600px) {
@@ -437,4 +456,20 @@
     .team .tn { font-size: 16px; }
     .bignum { font-size: 38px; }
     .tab { padding: 12px 13px; font-size: 13px; }
+    /* cabeçalho: eyebrow não corre por baixo do link "Evolução" (canto sup. direito) */
+    .toplink { padding: 7px 12px; font-size: 12px; }
+    .eyebrow { font-size: 11px; letter-spacing: 1px; max-width: calc(100% - 96px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    /* nome do líder em chamas: corta na coluna (não invade os pontos) */
+    .nm.flame-host { overflow: hidden; }
+    /* editor de placares do mata-mata: inputs e nomes cabem sem espremer */
+    .ke-line { gap: 6px; }
+    .ke-in { width: 44px; padding: 8px 4px; font-size: 15px; }
+    .ke-side { font-size: 13px; }
+    /* tabela de classificação mais compacta */
+    .standings th, .standings td { padding: 11px 3px; font-size: 13px; }
+    .standings .st-flag { width: 20px; height: 14px; }
+    /* seletor de modo e abas/accordeão */
+    .modebtn { font-size: 13px; padding: 11px 8px; }
+    .acc > summary { font-size: 14px; padding: 14px 14px; }
+    .pgrid { grid-template-columns: 1fr; }   /* cards de palpiteiros em 1 coluna no celular */
   }
