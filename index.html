@@ -545,6 +545,7 @@ let MATCHES=[], PROFILES=[], LIVE=null;
 let VIEW="ranking";
 let GROUP_FILTER="ALL";
 let JOGOS_ROUND="ALL";
+let JOGOS_ROUND_AUTO=true;   // enquanto true, o filtro de rodada segue sozinho a 1a fase com jogos pendentes
 let IDENTITY=localStorage.getItem("bolao_identity")||null; 
 let DIRTY=false, ENTRY_LOCK=false;
 
@@ -624,18 +625,31 @@ function openEntry(force){
 }
 
 /* ============================================================ DADOS */
+// Um jogo só é "definitivo" quando terminou COM placar válido.
+function isFinal(m){ return !!(m && m.status==="FINISHED" && m.homeScore!=null && m.awayScore!=null); }
+function updateSyncInfo(d){
+  const when=d&&d.updatedAt?new Date(d.updatedAt):null;
+  const live=MATCHES.some(m=>m.status==="IN_PLAY");
+  $("#syncInfo").innerHTML=(live?'<span style="color:#FDE047; font-weight:bold;">● AO VIVO</span> · ':'')+
+    "Atualizado em: "+(when?when.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—");
+}
 async function loadMatches(){
   const base=CONFIG.matchesUrl||"data/matches.json";
   const src=base+(base.includes("?")?"&":"?")+"t="+Date.now();
   const r=await fetch(src); if(!r.ok) throw new Error("matches");
   const d=await r.json();
   // O worker ja entrega o ao vivo embutido: mapeia minute -> liveMinute pros jogos IN_PLAY.
-  MATCHES=(d.matches||[]).map(m=>({round:1,...m, ...(m.minute!=null?{liveMinute:m.minute}:{})}))
-    .sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
-  const when=d.updatedAt?new Date(d.updatedAt):null;
-  const live=MATCHES.some(m=>m.status==="IN_PLAY");
-  $("#syncInfo").innerHTML=(live?'<span style="color:#FDE047; font-weight:bold;">● AO VIVO</span> · ':'')+
-    "Atualizado em: "+(when?when.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—");
+  const incoming=(d.matches||[]).map(m=>({round:1,...m, ...(m.minute!=null?{liveMinute:m.minute}:{})}));
+  // Proteção 1: um fetch vazio NÃO apaga os jogos que já temos (evita "zerar" tudo num soluço da fonte).
+  if(!incoming.length && MATCHES.length){ updateSyncInfo(d); return; }
+  // Proteção 2 (congelar jogos passados): os já finalizados ficam com o placar que já temos.
+  // Só jogos NÃO finalizados são atualizados pela busca — um jogo que já aconteceu nunca mais "zera".
+  const frozen=new Map();
+  for(const m of MATCHES){ if(isFinal(m)) frozen.set(m.id, m); }
+  const merged=incoming.map(m=> frozen.has(m.id)?frozen.get(m.id):m);
+  for(const [id,m] of frozen){ if(!merged.some(x=>x.id===id)) merged.push(m); }   // finalizado sumiu do fetch? mantém
+  MATCHES=merged.sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
+  updateSyncInfo(d);
 }
 async function loadPredictions(){
   if(CONFIG.jsonbin.enabled&&CONFIG.jsonbin.binId){
@@ -723,6 +737,14 @@ const statusBadge=(m)=> m.status==="FINISHED"?`<span class="status fin">Encerrad
 const kickoff=(m)=> new Date(m.utcDate).toLocaleString("pt-BR",{weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
 const roundsAvailable=()=>[...new Set(MATCHES.map(m=>m.round))].sort((a,b)=>a-b);
 const groupsAvailable=()=>[...new Set(MATCHES.map(m=>m.group))].sort();
+// 1a rodada que ainda tem jogo NAO encerrado (pra abrir o filtro ja na fase "atual").
+// Generico: serve pros grupos (rodadas 1,2,3) e, no futuro, pros playoffs (16-avos, oitavas...).
+function firstPendingRound(){
+  const rounds=roundsAvailable();
+  if(!rounds.length) return "ALL";
+  for(const r of rounds){ if(MATCHES.some(m=>m.round===r && m.status!=="FINISHED")) return r; }
+  return rounds[rounds.length-1];   // tudo encerrado -> mostra a ultima rodada
+}
 
 /* ============================================================ TABS */
 function buildTabs(){
@@ -778,6 +800,7 @@ function renderRanking(){
 function renderJogos(){
   const groups=groupsAvailable();
   const rounds=roundsAvailable();
+  if(JOGOS_ROUND_AUTO) JOGOS_ROUND=firstPendingRound();   // foco automatico na fase com jogos pendentes
   const rchips=[`<button class="chip" data-r="ALL" aria-pressed="${JOGOS_ROUND==='ALL'}">Todas as Rodadas</button>`]
     .concat(rounds.map(r=>`<button class="chip" data-r="${r}" aria-pressed="${JOGOS_ROUND===r}">Rodada ${r}</button>`)).join("");
   const gchips=[`<button class="chip" data-g="ALL" aria-pressed="${GROUP_FILTER==='ALL'}">Todos os Grupos</button>`]
@@ -791,7 +814,7 @@ function renderJogos(){
     html+=`<div class="roundhead">Rodada ${r}</div>`+inR.map(matchCard).join("");
   }
   $("#content").innerHTML=html;
-  $$(".chip[data-r]").forEach(c=>c.onclick=()=>{ JOGOS_ROUND=c.dataset.r==="ALL"?"ALL":+c.dataset.r; renderJogos(); });
+  $$(".chip[data-r]").forEach(c=>c.onclick=()=>{ JOGOS_ROUND_AUTO=false; JOGOS_ROUND=c.dataset.r==="ALL"?"ALL":+c.dataset.r; renderJogos(); });
   $$(".chip[data-g]").forEach(c=>c.onclick=()=>{ GROUP_FILTER=c.dataset.g; renderJogos(); });
   $$(".match").forEach(el=>el.onclick=()=>openMatch(el.dataset.id));
 }
