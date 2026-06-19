@@ -61,6 +61,70 @@ const $=(s,el=document)=>el.querySelector(s);
 const $$=(s,el=document)=>[...el.querySelectorAll(s)];
 const esc=(s)=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
+/* ============================================================ STATUS
+   A fonte (football-data.org via worker) oscila o status de jogos rolando entre
+   IN_PLAY, LIVE, PAUSED (intervalo) e HALFTIME. Tratamos todos como "ao vivo"
+   pra que o placar parcial apareça e entre no ranking sem piscar. */
+const LIVE_STATUSES = new Set(["IN_PLAY","LIVE","PAUSED","HALFTIME","LIVE_HT"]);
+function isLive(m){ return !!(m && LIVE_STATUSES.has(m.status)); }
+function normStatus(s){ return LIVE_STATUSES.has(s) ? "IN_PLAY" : s; }
+
+/* ============================================================ NOMES (PT-BR)
+   A fonte (football-data.org) manda os nomes das seleções em inglês. Aqui
+   traduzimos pra português. O mapa é indexado por uma forma "normalizada"
+   (minusculo, sem acento, só letras) pra aguentar variações da API
+   (ex.: "Korea Republic", "Turkiye", "USA"). Traduzir é idempotente: passar
+   um nome que já está em PT só devolve ele mesmo. Aplicado uma vez na carga
+   (loadMatches), então o resto do app continua usando m.home/m.away normalmente. */
+function normName(s){
+  return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z]/g,"");
+}
+const TEAM_PT = {
+  algeria:"Argélia", argentina:"Argentina", australia:"Austrália", austria:"Áustria",
+  belgium:"Bélgica", bosniaherzegovina:"Bósnia e Herzegovina", bosnia:"Bósnia e Herzegovina",
+  bosniaandherzegovina:"Bósnia e Herzegovina", brazil:"Brasil", canada:"Canadá",
+  capeverdeislands:"Cabo Verde", capeverde:"Cabo Verde", caboverde:"Cabo Verde",
+  colombia:"Colômbia", congodr:"RD Congo", drcongo:"RD Congo",
+  democraticrepublicofthecongo:"RD Congo", democraticrepublicofcongo:"RD Congo",
+  croatia:"Croácia", curacao:"Curaçao", czechia:"Tchéquia", czechrepublic:"Tchéquia",
+  ecuador:"Equador", egypt:"Egito", england:"Inglaterra", france:"França",
+  germany:"Alemanha", ghana:"Gana", haiti:"Haiti", iran:"Irã", iraq:"Iraque",
+  ivorycoast:"Costa do Marfim", cotedivoire:"Costa do Marfim", japan:"Japão",
+  jordan:"Jordânia", mexico:"México", morocco:"Marrocos", netherlands:"Holanda",
+  newzealand:"Nova Zelândia", norway:"Noruega", panama:"Panamá", paraguay:"Paraguai",
+  portugal:"Portugal", qatar:"Catar", saudiarabia:"Arábia Saudita", scotland:"Escócia",
+  senegal:"Senegal", southafrica:"África do Sul", southkorea:"Coreia do Sul",
+  korearepublic:"Coreia do Sul", republicofkorea:"Coreia do Sul", spain:"Espanha",
+  sweden:"Suécia", switzerland:"Suíça", tunisia:"Tunísia", turkey:"Turquia",
+  turkiye:"Turquia", unitedstates:"Estados Unidos", usa:"Estados Unidos",
+  unitedstatesofamerica:"Estados Unidos", uruguay:"Uruguai", uzbekistan:"Uzbequistão"
+};
+function teamName(name){
+  if(name==null) return name;
+  return TEAM_PT[normName(name)] || name;
+}
+
+/* ============================================================ TEMPO AO VIVO
+   Mostra o minuto do jogo em andamento. Se o worker mandar o minuto exato
+   (campo `minute` -> liveMinute), usamos ele. Senão, estimamos pelo horário
+   de início (utcDate): 1o tempo, intervalo, 2o tempo. É uma aproximação
+   (não conhece acréscimos/paradas), por isso vem marcada com "~". */
+function liveMinuteText(m){
+  if(!m || m.status!=="IN_PLAY") return "";
+  if(m.liveMinute!=null){
+    const n=String(m.liveMinute).trim();
+    return n ? (/['+a-zA-Z]/.test(n) ? n : n+"'") : "";
+  }
+  const start=new Date(m.utcDate).getTime();
+  if(!Number.isFinite(start)) return "";
+  const el=Math.floor((Date.now()-start)/60000);
+  if(el<0) return "";
+  if(el<=45) return "~"+Math.max(1,el)+"'";
+  if(el<=60) return "Intervalo";
+  if(el<=105) return "~"+Math.min(90,45+(el-60))+"'";
+  return "~90+'";
+}
+
 /* ============================================================ PONTUAÇÃO */
 function pointsFor(pick,ah,aa){
   if(!pick||pick.home==null||pick.away==null) return 0;
@@ -147,7 +211,9 @@ async function loadMatches(){
   const r=await fetch(src); if(!r.ok) throw new Error("matches");
   const d=await r.json();
   // O worker ja entrega o ao vivo embutido: mapeia minute -> liveMinute pros jogos IN_PLAY.
-  const incoming=(d.matches||[]).map(m=>({round:1,...m, ...(m.minute!=null?{liveMinute:m.minute}:{})}));
+  // Normaliza status "ao vivo" (LIVE/PAUSED/HALFTIME) pra IN_PLAY — a fonte oscila entre
+  // eles durante o jogo e o resto do app trata só IN_PLAY como ao vivo.
+  const incoming=(d.matches||[]).map(m=>({round:1,...m, status:normStatus(m.status), home:teamName(m.home), away:teamName(m.away), ...(m.minute!=null?{liveMinute:m.minute}:{})}));
   // Proteção 1: um fetch vazio NÃO apaga os jogos que já temos (evita "zerar" tudo num soluço da fonte).
   if(!incoming.length && MATCHES.length){ updateSyncInfo(d); return; }
   // Proteção 2 (congelar jogos passados): os já finalizados ficam com o placar que já temos.
@@ -177,7 +243,9 @@ async function loadPredictions(){
 // Mantem no LIVE apenas jogos EM ANDAMENTO com um placar valido.
 function normLive(blk){
   if(!blk||!Array.isArray(blk.matches)) return null;
-  const matches=blk.matches.filter(x=>x&&x.id&&x.status==="IN_PLAY");
+  const matches=blk.matches
+    .filter(x=>x&&x.id&&isLive(x))
+    .map(x=>({...x,status:"IN_PLAY"}));
   return matches.length?{updatedAt:blk.updatedAt||null,matches}:null;
 }
 // Fonte dedicada de placares ao vivo (CONFIG.liveUrl), quando configurada.
@@ -199,7 +267,7 @@ function applyLive(){
     if(!lv||m.status==="FINISHED") return;   // resultado final sempre prevalece
     if(lv.homeScore!=null) m.homeScore=lv.homeScore;
     if(lv.awayScore!=null) m.awayScore=lv.awayScore;
-    m.status=lv.status||m.status;
+    m.status=normStatus(lv.status||m.status);
     if(lv.minute!=null) m.liveMinute=lv.minute;
   });
 }
@@ -240,9 +308,25 @@ function avatar(prof,cls=""){
   if(prof.photo) return `<img class="av ${cls}" src="${esc(prof.photo)}" alt="" onerror="this.outerHTML='<div class=\\'av ph ${cls}\\'>${esc((prof.name||'?')[0])}</div>'">`;
   return `<div class="av ph ${cls}">${esc((prof.name||"?")[0])}</div>`;
 }
-const statusBadge=(m)=> m.status==="FINISHED"?`<span class="status fin">Encerrado</span>`
-  : m.status==="IN_PLAY"?`<span class="status live">● Ao vivo</span>` : `<span class="status">A jogar</span>`;
-const kickoff=(m)=> new Date(m.utcDate).toLocaleString("pt-BR",{weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+function statusBadge(m){
+  if(m.status==="FINISHED") return `<span class="status fin">Encerrado</span>`;
+  if(m.status==="IN_PLAY"){
+    const t=liveMinuteText(m);
+    return `<span class="status live">● Ao vivo${t?` <b class="js-livemin" data-mid="${esc(m.id)}">${esc(t)}</b>`:""}</span>`;
+  }
+  return `<span class="status">A jogar</span>`;
+}
+// Data do jogo em PT-BR, com atalho amigável "Hoje/Amanhã/Ontem, HH:MM".
+function kickoff(m){
+  const d=new Date(m.utcDate); if(isNaN(d)) return "";
+  const hm=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  const day=(x)=>new Date(x.getFullYear(),x.getMonth(),x.getDate());
+  const diff=Math.round((day(d)-day(new Date()))/86400000);
+  if(diff===0) return `Hoje, ${hm}`;
+  if(diff===1) return `Amanhã, ${hm}`;
+  if(diff===-1) return `Ontem, ${hm}`;
+  return d.toLocaleString("pt-BR",{weekday:"short",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+}
 const roundsAvailable=()=>[...new Set(MATCHES.map(m=>m.round))].sort((a,b)=>a-b);
 const groupsAvailable=()=>[...new Set(MATCHES.map(m=>m.group))].sort();
 // 1a rodada que ainda tem jogo NAO encerrado (pra abrir o filtro ja na fase "atual").
@@ -359,7 +443,11 @@ function renderJogos(){
   let curHtml="";
   if(showCur){
     const live=cur.status==="IN_PLAY";
-    curHtml=`<div class="cur-card${live?' live':''}"><div class="cur-head${live?' live':''}">${live?'<span class="cur-dot"></span> Ao vivo agora':'⏱ Próximo jogo'}</div>${matchCard(cur)}</div>`;
+    const t=live?liveMinuteText(cur):"";
+    const headTxt=live
+      ? `<span class="cur-dot"></span> Ao vivo agora${t?` <span class="cur-min js-livemin" data-mid="${esc(cur.id)}">${esc(t)}</span>`:""}`
+      : '⏱ Próximo jogo';
+    curHtml=`<div class="cur-card${live?' live':''}"><div class="cur-head${live?' live':''}">${headTxt}</div>${matchCard(cur)}</div>`;
   }
   let html=`<div class="filters">${rchips}</div><div class="filters">${gchips}</div>${curChip}${curHtml}`;
   if(!list.length && !showCur) html+=`<div class="empty">Sem jogos neste filtro.</div>`;
@@ -785,7 +873,8 @@ function openMatch(id){
       <div class="pl-right"><span class="pscore${r.has?'':' none'}">${scoreTxt}</span>${tag}</div></div>`;
   }).join("") || `<div class="empty">Ninguém palpitou ainda.</div>`;
   
-  const liveMin = m.liveMinute!=null ? ` · ${esc(String(m.liveMinute))}'` : "";
+  const lmt = m.status==="IN_PLAY" ? liveMinuteText(m) : "";
+  const liveMin = lmt ? ` · ${esc(lmt)}` : "";
   const headNote = fin
     ? ''
     : live
@@ -969,5 +1058,16 @@ setInterval(()=>{
   }
   Promise.all(jobs).then(()=>{ applyLive(); if(!$("#scrim").classList.contains("open")) render(); }).catch(()=>{});
 }, REFRESH_MS);
+
+// Relogio ao vivo: atualiza só os minutos na tela (sem re-render) a cada 20s,
+// pra estimativa "correr" suave entre os fetches de 60s.
+setInterval(()=>{
+  const els=$$(".js-livemin"); if(!els.length) return;
+  for(const el of els){
+    const m=MATCHES.find(x=>x.id===el.dataset.mid);
+    const t=m?liveMinuteText(m):"";
+    if(t && el.textContent!==t) el.textContent=t;
+  }
+}, 20*1000);
 
 loadAll();
