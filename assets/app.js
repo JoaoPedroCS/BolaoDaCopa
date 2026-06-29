@@ -48,12 +48,12 @@ const CONFIG = {
 /* ---------- Estado ---------- */
 let MATCHES=[], PROFILES=[], LIVE=null;
 let VIEW="ranking";
-let MODE="grupos";   // "grupos" | "playoffs" — alterna todo o conjunto de abas
+let MODE="playoffs";   // "grupos" | "playoffs" — alterna todo o conjunto de abas
 let KO_PHASE=0, KO_PHASE_AUTO=true;   // fase atual na aba Partidas do mata-mata
 let GROUP_FILTER="ALL";
 let JOGOS_ROUND="ALL";
-let JOGOS_ROUND_AUTO=true;   // enquanto true, o filtro de rodada segue sozinho a 1a fase com jogos pendentes
-let SHOW_CURRENT=true;       // mostra o card do "jogo atual" (ao vivo/próximo) no topo da aba Jogos
+let JOGOS_ROUND_AUTO=false;  // false = mantém "Todas as Rodadas" por padrão
+let SHOW_CURRENT=false;      // desativado — fase de grupos encerrada
 let IDENTITY=localStorage.getItem("bolao_identity")||null; 
 let DIRTY=false, ENTRY_LOCK=false;
 
@@ -357,7 +357,7 @@ const TABS={
 function buildModeBar(){
   const mb=$("#modebar");
   if(mb){
-    const modes=[["grupos","Fase de Grupos"],["playoffs","Playoffs"]];
+    const modes=[["playoffs","Playoffs"],["grupos","Grupos · Encerrada ✓"]];
     mb.innerHTML=modes.map(([m,l])=>`<button class="modebtn" data-mode="${m}" aria-selected="${MODE===m}">${l}</button>`).join("");
     $$(".modebtn",mb).forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
   }
@@ -366,7 +366,7 @@ function buildModeBar(){
 }
 function setMode(m){
   if(MODE===m) return;
-  MODE=m; VIEW="ranking"; JOGOS_ROUND_AUTO=true; KO_PHASE_AUTO=true;
+  MODE=m; VIEW="ranking"; JOGOS_ROUND_AUTO=false; KO_PHASE_AUTO=true;
   buildModeBar(); buildTabs(); render();
 }
 function buildTabs(){
@@ -404,7 +404,10 @@ function renderRanking(){
     const nameHtml = i===0
       ? `<span class="flame-name" data-text="${esc(e.prof.name)}">${esc(e.prof.name)}</span><span class="flame-torch">\u{1F525}</span>`
       : esc(e.prof.name);
-    
+    const champBadge = i===0
+      ? `<div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:2px;display:flex;align-items:center;gap:4px;">🏆 Campeão dos Grupos</div>`
+      : '';
+
     // Novo Visual de Metadados (Bolinhas)
     const badges = `
       <div class="badge-row" aria-label="Acertos: ${e.c5} exatos, ${e.c3} empates, ${e.c25} vencedores, ${e.c0} erros">
@@ -417,7 +420,7 @@ function renderRanking(){
 
     return `<div class="row ${cls}">
       <div class="rank">${i+1}</div>
-      <div class="who">${avatar(e.prof)}<div style="min-width:0"><div class="nm${i===0?' flame-host':''}">${nameHtml}${tag}</div>
+      <div class="who">${avatar(e.prof)}<div style="min-width:0">${champBadge}<div class="nm${i===0?' flame-host':''}">${nameHtml}${tag}</div>
         ${badges}</div></div>
       <div class="pts">${fmtPts(e.total)}<small>pontos</small></div>
     </div>`;
@@ -544,6 +547,7 @@ const KO_ROUNDS=[
   ["Oitavas de final",[89,90,91,92,93,94,95,96]],
   ["Quartas de final",[97,98,99,100]],
   ["Semifinais",[101,102]],
+  ["3º Lugar",[103]],
   ["Final",[104]]
 ];
 async function loadR32Thirds(){
@@ -577,8 +581,11 @@ function koSeeds(){
   };
 }
 // Vencedor de um jogo a partir do palpite de placar (empate -> quem avança nos pênaltis).
+// Para fases além dos 16-avos, o pick pode ser só {adv} sem h/a.
 function koWinner(teams,pick){
-  if(!teams||!teams[0]||!teams[1]||!pick||typeof pick!=="object"||pick.h==null||pick.a==null) return null;
+  if(!teams||!teams[0]||!teams[1]||!pick||typeof pick!=="object") return null;
+  if(pick.h==null&&pick.a==null) return pick.adv==="home"?teams[0]:(pick.adv==="away"?teams[1]:null);
+  if(pick.h==null||pick.a==null) return null;
   if(+pick.h>+pick.a) return teams[0];
   if(+pick.a>+pick.h) return teams[1];
   return pick.adv==="home"?teams[0]:(pick.adv==="away"?teams[1]:null);
@@ -586,7 +593,7 @@ function koWinner(teams,pick){
 // Foto do chaveamento AGORA: R32 pela classificação; fases seguintes a definir.
 function koResolveProjection(){
   const M={...koSeeds()};
-  for(const mid of [89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]) M[mid]=[null,null];
+  for(const mid of [89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104]) M[mid]=[null,null];
   return M;
 }
 // Bracket pessoal: o vencedor que a pessoa previu avança pra próxima fase.
@@ -596,6 +603,9 @@ function koResolvePicks(picks){
     const f=KO_FEED[mid];
     M[mid]=[ koWinner(M[f[0]],picks&&picks[f[0]]), koWinner(M[f[1]],picks&&picks[f[1]]) ];
   }
+  // 3º lugar: perdedores das semis 101 e 102
+  const koLoser=(teams,pick)=>{ if(!teams||!teams[0]||!teams[1]) return null; const w=koWinner(teams,pick); return w?(w===teams[0]?teams[1]:teams[0]):null; };
+  M[103]=[koLoser(M[101],picks&&picks[101]), koLoser(M[102],picks&&picks[102])];
   return M;
 }
 
@@ -610,9 +620,10 @@ const KO_BRACKET_COLS=[
 const KO_H=1040;   // altura base (px) da área de jogos, p/ alinhar as fases
 let MEUS_OPEN={grupos:false, mata:false};
 let koZoom=1, koPanX=12, koPanY=12, koViewInit=false;
-function koCell(teams,hasRight){
+function koCell(teams, cellClass){
   const slot=(t)=> t?`<div class="kb-team"><img src="${esc(t.crest||'')}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span></div>`:`<div class="kb-team tbd">A definir</div>`;
-  return `<div class="kb-cell${hasRight?' kb-hasright':''}">${slot(teams[0])}${slot(teams[1])}</div>`;
+  const cls=typeof cellClass==='string'?cellClass:(cellClass?'kb-hasright':'');
+  return `<div class="kb-cell${cls?' '+cls:''}">${slot(teams[0])}${slot(teams[1])}</div>`;
 }
 function koMountPanZoom(stage,inner){
   let z=koZoom, ox=koPanX, oy=koPanY;
@@ -643,19 +654,43 @@ async function renderMataMata(){
     try{ await loadR32Thirds(); }catch(e){ $("#content").innerHTML=`<div class="empty">Não consegui carregar o chaveamento. Tente recarregar a página.</div>`; return; }
     if(MODE!=="playoffs"||VIEW!=="chave") return;
   }
-  const M=koResolveProjection(), last=KO_BRACKET_COLS.length-1;
-  const cols=KO_BRACKET_COLS.map((col,ci)=>{
+  const M=koResolveProjection();
+  // Dois lados do chaveamento (8 times por lado)
+  const LEFT=[
+    {label:"16-avos", ids:[74,77,73,75,83,84,81,82]},
+    {label:"Oitavas", ids:[89,90,93,94], childN:8},
+    {label:"Quartas", ids:[97,98], childN:4},
+    {label:"Semis",   ids:[101], childN:2}
+  ];
+  const RIGHT=[ // DOM order: visual right→left (row-reverse)
+    {label:"16-avos", ids:[76,78,79,80,86,88,85,87]},
+    {label:"Oitavas", ids:[91,92,95,96], childN:8},
+    {label:"Quartas", ids:[99,100], childN:4},
+    {label:"Semis",   ids:[102], childN:2}
+  ];
+  const buildCol=(col,isRight)=>{
     const cells=col.ids.map(mid=>{
-      const join=col.childN?`<span class="kb-join" style="--conn:${KO_H/col.childN}px"></span>`:"";
-      return `<div class="kb-slot">${join}${koCell(M[mid], ci<last)}</div>`;
+      const join=col.childN
+        ?`<span class="${isRight?'kb-join-r':'kb-join'}" style="--conn:${KO_H/col.childN}px"></span>`:"";
+      return `<div class="kb-slot">${join}${koCell(M[mid], isRight?'kb-hasleft':'kb-hasright')}</div>`;
     }).join("");
     return `<div class="kb-col"><div class="kb-head">${esc(col.label)}</div><div class="kb-cells">${cells}</div></div>`;
-  }).join("");
+  };
+  const leftHtml =LEFT.map(c=>buildCol(c,false)).join("");
+  const rightHtml=RIGHT.map(c=>buildCol(c,true)).join("");
+  const finalHtml=`<div class="kb-col kb-final-col">
+    <div class="kb-head">Final</div>
+    <div class="kb-cells"><div class="kb-slot">${koCell(M[104],'kb-hasleft kb-hasright')}</div></div>
+  </div>`;
+  const bracket=`<div class="kb-bracket-two" style="height:${KO_H+26}px">
+    <div class="kb-half">${leftHtml}</div>
+    ${finalHtml}
+    <div class="kb-half kb-half-r">${rightHtml}</div>
+  </div>`;
   $("#content").innerHTML=`
-    <div class="ko-note">Foto do chaveamento <b>agora</b>, pela classificação atual — os 16-avos já saem das regras da FIFA (1º, 2º e os 8 melhores 3º, com o Anexo C); as fases seguintes só aparecem quando os jogos acontecerem. Aqui é <b>só visualização</b>: para cravar seus placares, vá na aba <b>Palpites</b>. Arraste para os lados e use os botões de zoom.</div>
     <div class="kb-wrap">
       <div class="kb-ctrls"><button class="btn small" id="koZout" aria-label="Diminuir zoom">−</button><button class="btn small" id="koZfit">Ajustar</button><button class="btn small" id="koZin" aria-label="Aumentar zoom">+</button></div>
-      <div class="kb-stage" id="koStage"><div class="kb-bracket" id="koBracket" style="height:${KO_H+26}px">${cols}</div></div>
+      <div class="kb-stage" id="koStage"><div id="koBracket" style="transform-origin:0 0">${bracket}</div></div>
     </div>`;
   koMountPanZoom($("#koStage"), $("#koBracket"));
 }
@@ -667,27 +702,41 @@ function koEditorHtml(picks){
     const rows=ids.map(mid=>{
       const A=M[mid][0], B=M[mid][1], known=!!(A&&B);
       const pk=(picks&&typeof picks[mid]==="object")?picks[mid]:null;
-      const hv=pk&&pk.h!=null?pk.h:"", av=pk&&pk.a!=null?pk.a:"";
-      const draw=known && hv!=="" && av!=="" && (+hv===+av);
       const nm=(t)=> t?`<span class="ke-tn">${esc(t.name)}</span>`:`<span class="ke-tn tbd">A definir</span>`;
       const fl=(t)=> t?`<img class="pl-flag" src="${esc(t.crest||'')}" alt="" onerror="this.style.display='none'">`:"";
-      const pen= draw?`<div class="ke-pen"><span>Empate — quem passa nos pênaltis?</span>
-        <button class="ke-adv${pk&&pk.adv==='home'?' on':''}" data-mid="${mid}" data-adv="home">${esc(A.name)}</button>
-        <button class="ke-adv${pk&&pk.adv==='away'?' on':''}" data-mid="${mid}" data-adv="away">${esc(B.name)}</button></div>`:"";
-      return `<div class="ke-row${known?'':' off'}">
-        <div class="ke-line">
-          <div class="ke-side">${fl(A)}${nm(A)}</div>
-          <input class="fld ke-in" type="number" min="0" inputmode="numeric" data-mid="${mid}" data-side="h" value="${hv}"${known?'':' disabled'}>
-          <span class="vs">×</span>
-          <input class="fld ke-in" type="number" min="0" inputmode="numeric" data-mid="${mid}" data-side="a" value="${av}"${known?'':' disabled'}>
-          <div class="ke-side away">${nm(B)}${fl(B)}</div>
-        </div>${pen}
-      </div>`;
+      if(KO_R32_IDS.has(mid)){
+        const hv=pk&&pk.h!=null?pk.h:"", av=pk&&pk.a!=null?pk.a:"";
+        const draw=known && hv!=="" && av!=="" && (+hv===+av);
+        const pen=draw?`<div class="ke-pen"><span>Empate — quem passa nos pênaltis?</span>
+          <button class="ke-adv${pk&&pk.adv==='home'?' on':''}" data-mid="${mid}" data-adv="home"><span class="ke-mark">✕</span>${esc(A.name)}</button>
+          <button class="ke-adv${pk&&pk.adv==='away'?' on':''}" data-mid="${mid}" data-adv="away"><span class="ke-mark">✕</span>${esc(B.name)}</button></div>`:"";
+        return `<div class="ke-row${known?'':' off'}">
+          <div class="ke-line">
+            <div class="ke-side">${fl(A)}${nm(A)}</div>
+            <input class="fld ke-in" type="number" min="0" inputmode="numeric" data-mid="${mid}" data-side="h" value="${hv}"${known?'':' disabled'}>
+            <span class="vs">×</span>
+            <input class="fld ke-in" type="number" min="0" inputmode="numeric" data-mid="${mid}" data-side="a" value="${av}"${known?'':' disabled'}>
+            <div class="ke-side away">${nm(B)}${fl(B)}</div>
+          </div>${pen}
+        </div>`;
+      } else {
+        const picked=pk?pk.adv:null;
+        return `<div class="ke-row${known?'':' off'}">
+          <div class="ke-pick-row">
+            <button class="ke-adv ke-pick-l${picked==='home'?' on':''}" data-mid="${mid}" data-adv="home"${known?'':' disabled'}><span class="ke-mark">✕</span>${fl(A)}${nm(A)}</button>
+            <span class="ke-vsep">×</span>
+            <button class="ke-adv ke-pick-r${picked==='away'?' on':''}" data-mid="${mid}" data-adv="away"${known?'':' disabled'}><span class="ke-mark">✕</span>${nm(B)}${fl(B)}</button>
+          </div>
+        </div>`;
+      }
     }).join("");
-    return `<div class="ke-round">${label}</div>${rows}`;
+    const phase=koPhaseFor(ids[0]);
+    const qpts=phase?KO_QUAL_PTS[phase]:null;
+    const ptLabel=qpts?` <span style="font-size:12px;color:var(--muted);font-weight:400">· acertar = ${qpts} pts</span>`:'';
+    return `<div class="ke-round">${label}${ptLabel}</div>${rows}`;
   }).join("");
   return `<div class="ke-champ">Seu campeão previsto: <b>${champ?esc(champ.name):'—'}</b></div>
-    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Crave o placar de cada jogo; o vencedor avança e monta a próxima fase. Em empate, escolha quem passa nos pênaltis. Os 16-avos saem da classificação atual e seus palpites ficam fixos.</p>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Nos 16-avos, crave o placar (exato=5, vencedor=2,5, empate 90min=3) e quem passa (+5 bônus). Nas demais fases, escolha apenas quem avança.</p>
     ${rounds}
     <div class="ko-save"><button class="btn primary" id="koSaveBtn">Salvar meu mata-mata</button></div>`;
 }
@@ -718,22 +767,75 @@ const KO_PHASES=[
   ["Oitavas",[89,90,91,92,93,94,95,96]],
   ["Quartas",[97,98,99,100]],
   ["Semifinais",[101,102]],
+  ["3º Lugar",[103]],
   ["Final",[104]]
 ];
-const KO_ALL_IDS=[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,104];
+const KO_ALL_IDS=[73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104];
 // Garante o Anexo C carregado antes dos renders que dependem do chaveamento.
 function ensureR32(cb){
   if(R32T){ cb(); return; }
   $("#content").innerHTML=`<div class="empty">Carregando chaveamento…</div>`;
   loadR32Thirds().then(()=>{ if(MODE==="playoffs") cb(); }).catch(()=>{ $("#content").innerHTML=`<div class="empty">Não consegui carregar o chaveamento. Tente recarregar a página.</div>`; });
 }
-// Pontuação do mata-mata: A DEFINIR (e ainda não há resultados de KO). Devolve null = não pontua.
-// Quando definir a regra, é só implementar aqui que o ranking de playoffs passa a valer.
-function scoreKnockout(prof){ return null; }
+// IDs dos 16-avos e pontuação por fase (classificado certo).
+const KO_R32_IDS=new Set([73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88]);
+const KO_QUAL_PTS={r32:5,r16:10,qf:20,sf:40,third:60,final:80};
+function koPhaseFor(mid){
+  const id=+mid;
+  if(KO_R32_IDS.has(id)) return "r32";
+  if(id>=89&&id<=96) return "r16";
+  if(id>=97&&id<=100) return "qf";
+  if(id===101||id===102) return "sf";
+  if(id===103) return "third";
+  if(id===104) return "final";
+  return null;
+}
+// Pontos de placar nos 16-avos (baseado nos 90 min): exato=5, vencedor=2.5, empate=3.
+function pointsForKo90(ph,pa,ah,aa){
+  if(ph===ah&&pa===aa) return 5;
+  const ps=Math.sign(ph-pa),as_=Math.sign(ah-aa);
+  if(ps!==as_) return 0;
+  return as_===0?3:2.5;
+}
+// Quem a pessoa previu que avança (pick {h,a,adv} ou {adv} para fases além dos 16-avos).
+function koPickedAdvancer(pick){
+  if(!pick) return null;
+  if(pick.h==null||pick.a==null) return pick.adv||null;
+  const ph=+pick.h,pa=+pick.a;
+  if(ph>pa) return "home"; if(pa>ph) return "away"; return pick.adv||null;
+}
+// Quem realmente avançou (draw => m.koWinner do worker, "home"|"away").
+function koActualAdvancer(m){
+  if(m.homeScore==null||m.awayScore==null) return null;
+  const ah=+m.homeScore,aa=+m.awayScore;
+  if(ah>aa) return "home"; if(aa>ah) return "away"; return m.koWinner||null;
+}
+function scoreKnockout(prof){
+  const ko=prof.ko||{}; let total=0,played=0;
+  for(const m of MATCHES){
+    const phase=koPhaseFor(m.id); if(!phase) continue;
+    if(m.status!=="FINISHED"||m.homeScore==null||m.awayScore==null) continue;
+    const pick=ko[m.id]; const adv=koActualAdvancer(m);
+    if(phase==="r32"){
+      if(!pick||pick.h==null||pick.a==null) continue;
+      played++;
+      total+=pointsForKo90(+pick.h,+pick.a,+m.homeScore,+m.awayScore);
+      if(adv&&koPickedAdvancer(pick)===adv) total+=KO_QUAL_PTS.r32;
+    } else {
+      const predAdv=koPickedAdvancer(pick); if(!predAdv) continue;
+      played++;
+      if(adv&&predAdv===adv) total+=KO_QUAL_PTS[phase];
+    }
+  }
+  return played>0?total:null;
+}
 function koStatsFor(prof){
   const ko=prof.ko||{};
   let picks=0;
-  for(const mid of KO_ALL_IDS){ const pk=ko[mid]; if(pk&&typeof pk==="object"&&pk.h!=null&&pk.a!=null) picks++; }
+  for(const mid of KO_ALL_IDS){
+    const pk=ko[mid]; if(!pk||typeof pk!=="object") continue;
+    if(KO_R32_IDS.has(mid)){if(pk.h!=null&&pk.a!=null) picks++;} else {if(pk.adv) picks++;}
+  }
   const M=koResolvePicks(ko), ch=koWinner(M[104], ko[104]);
   return { picks, champ: ch?ch.name:null, pts: scoreKnockout(prof) };
 }
@@ -747,7 +849,10 @@ function renderKoRanking(){
   if(!R32T) return ensureR32(renderKoRanking);
   if(!PROFILES.length){ $("#content").innerHTML=`<div class="empty">Nenhum palpiteiro cadastrado.</div>`; return; }
   const rk=koRanking();
-  const note=`<div class="ko-note">A <b>pontuação do mata-mata ainda não foi definida</b> — este ranking passa a valer quando os jogos do KO começarem. Por enquanto mostra o campeão cravado e quantos jogos cada um já palpitou.</div>`;
+  const hasScores=rk.some(e=>e.pts!==null);
+  const note=hasScores
+    ?`<div class="ko-note">Ranking do mata-mata. <b>16-avos:</b> placar exato=5, vencedor=2,5, empate 90min=3, classificado=+5. Demais fases (acertar quem passa): oitavas=10, quartas=20, semi=40, 3º lugar=60, final=80.</div>`
+    :`<div class="ko-note">Os jogos do mata-mata ainda não começaram. <b>16-avos:</b> placar exato=5, vencedor=2,5, empate 90min=3, classificado=+5. Demais fases (acertar quem passa): oitavas=10, quartas=20, semi=40, 3º lugar=60, final=80. Por enquanto mostra campeão cravado e palpites feitos.</div>`;
   const rows=rk.map((e,i)=>{
     const mine=me()&&me().id===e.prof.id;
     const cls=(i===0?"r1":i===1?"r2":i===2?"r3":"")+(mine?" me":"");
@@ -812,17 +917,38 @@ function openKoProfile(id){
     const rows=ids.map(mid=>{
       const A=M[mid][0], B=M[mid][1]; if(!A||!B) return "";
       const pk=(typeof ko[mid]==="object")?ko[mid]:null;
+      const m=MATCHES.find(x=>+x.id===mid);
+      const fin=!!(m&&m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null);
       let sc="—";
-      if(pk&&pk.h!=null&&pk.a!=null){ sc=`${pk.h} – ${pk.a}`; if(+pk.h===+pk.a&&pk.adv) sc+=` <span style="color:var(--muted)">(pen: ${pk.adv==='home'?esc(A.name):esc(B.name)})</span>`; }
+      if(KO_R32_IDS.has(mid)){
+        if(pk&&pk.h!=null&&pk.a!=null){ sc=`${pk.h} – ${pk.a}`; if(+pk.h===+pk.a&&pk.adv) sc+=` <span style="color:var(--muted)">(pen: ${pk.adv==='home'?esc(A.name):esc(B.name)})</span>`; }
+      } else {
+        if(pk&&pk.adv) sc=`→ ${pk.adv==='home'?esc(A.name):esc(B.name)}`;
+      }
+      let ptTag="";
+      if(fin&&pk){
+        const phase=koPhaseFor(mid); const adv=koActualAdvancer(m); const predAdv=koPickedAdvancer(pk);
+        if(phase==="r32"&&pk.h!=null&&pk.a!=null){
+          const sp=pointsForKo90(+pk.h,+pk.a,+m.homeScore,+m.awayScore);
+          const qp=(adv&&predAdv===adv)?KO_QUAL_PTS.r32:0;
+          const tot=sp+qp; const cls=tot===0?"p0":sp===5?"p5":sp===3?"p3":"p25";
+          ptTag=`<span class="ptag ${cls}">${fmtPts(tot)} pts${qp>0?` +${qp}Q`:""}</span>`;
+        } else if(phase&&phase!=="r32"&&predAdv){
+          const pts=(adv&&predAdv===adv)?KO_QUAL_PTS[phase]:0;
+          ptTag=`<span class="ptag ${pts>0?'p5':'p0'}">${pts} pts</span>`;
+        }
+      }
       return `<div class="pick-line"><div class="pl-who"><span class="nm" style="font-size:14px">${esc(A.name)} <span class="vs">×</span> ${esc(B.name)}</span></div>
-        <div class="pl-right"><span class="pscore${pk?'':' none'}">${sc}</span></div></div>`;
+        <div class="pl-right"><span class="pscore${pk?'':' none'}">${sc}</span>${fin?`<span style="font-size:12px;color:var(--muted);margin:0 4px">${m.homeScore}–${m.awayScore}</span>`:""}${ptTag}</div></div>`;
     }).filter(Boolean).join("");
     return rows?`<div class="ke-round">${label}</div>${rows}`:"";
   }).join("") || `<div class="empty">Sem palpites de mata-mata ainda.</div>`;
   const ch=koWinner(M[104], ko[104]);
+  const totalKo=scoreKnockout(p);
   $("#modal").innerHTML=`<button class="x" id="m-x">✕</button>
     <div class="mhead">${avatar(p)}<div><h3 style="padding:0">${esc(p.name)}</h3>
-      <div style="color:var(--signal);font-size:15px;font-weight:700">${ch?'🏆 Campeão: '+esc(ch.name):'Sem campeão definido'}</div></div></div>
+      <div style="color:var(--signal);font-size:15px;font-weight:700">${ch?'🏆 Campeão: '+esc(ch.name):'Sem campeão definido'}</div>
+      ${totalKo!==null?`<div style="font-size:14px;color:var(--muted);margin-top:2px">Mata-mata: ${fmtPts(totalKo)} pts</div>`:""}</div></div>
     ${body}`;
   openModal(); $("#m-x").onclick=()=>closeModal();
 }
@@ -966,9 +1092,7 @@ function renderMeus(){
       <div class="who">${avatar(p, "av-white-border")}<div><div class="nm" style="color:white; font-size:20px;">${esc(p.name)}</div>
         <div style="font-size:14px; color:#9FB0C2; margin-top:4px;">${s.played} jogos palpitados</div></div></div>
       <div class="pts" style="color:var(--signal);">${fmtPts(s.total)}<small style="color:#9FB0C2;">pontos</small></div></div></div>
-    <div style="display:flex; justify-content:flex-end; margin-bottom:16px"><button class="btn primary" id="editMineBtn" style="width:100%; max-width:320px; padding:14px; font-size:15px;">Editar meus palpites ➔</button></div>
     ${list}`;
-  $("#editMineBtn").onclick=()=>openPickEditor();
 }
 function fillKoEditor(){
   const host=$("#koEditor"), p=me(); if(!host||!p) return;

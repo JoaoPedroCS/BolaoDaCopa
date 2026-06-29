@@ -402,11 +402,22 @@
   .ke-side.away { justify-content: flex-end; text-align: right; }
   .ke-tn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ke-tn.tbd { color: var(--muted); font-weight: 500; font-style: italic; }
-  .ke-in { width: 52px; text-align: center; padding: 9px; font-size: 17px; font-weight: 800; }
+  .ke-in { width: 52px; text-align: center; padding: 9px; font-size: 17px; font-weight: 800; -moz-appearance: textfield; }
+  .ke-in::-webkit-outer-spin-button,
+  .ke-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .ke-pen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 9px 0 2px; font-size: 13px; color: var(--muted); }
-  .ke-adv { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--chalk); font-family: var(--font-base); font-weight: 700; font-size: 13px; padding: 7px 13px; border-radius: 999px; cursor: pointer; transition: .15s; }
+  .ke-adv { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--chalk); font-family: var(--font-base); font-weight: 700; font-size: 13px; padding: 7px 13px; border-radius: 999px; cursor: pointer; transition: .15s; display: inline-flex; align-items: center; gap: 5px; }
   .ke-adv:hover { border-color: var(--signal); color: var(--signal); }
   .ke-adv.on { background: var(--signal); color: var(--signal-deep); border-color: var(--signal); box-shadow: 0 0 14px rgba(191,242,52,.4); }
+  /* X-marker: visible only when button is .on */
+  .ke-mark { font-size: 14px; font-weight: 900; opacity: 0; transition: opacity .12s; flex-shrink: 0; }
+  .ke-adv.on .ke-mark { opacity: 1; }
+  /* Pick row (oitavas+): dois botões lado a lado */
+  #koEditor { max-width: 580px; margin: 0 auto; }
+  .ke-pick-row { display: flex; align-items: stretch; gap: 10px; }
+  .ke-pick-l, .ke-pick-r { flex: 1; display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 12px; font-size: 14px; text-align: left; min-width: 0; }
+  .ke-pick-r { justify-content: flex-end; flex-direction: row-reverse; }
+  .ke-vsep { font-size: 18px; color: var(--muted); font-weight: 700; flex-shrink: 0; align-self: center; }
 
   /* ===== Bracket (aba Mata-mata) — zoom e arrasto ===== */
   .kb-wrap { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); overflow: hidden; box-shadow: var(--shadow-card); }
@@ -414,25 +425,36 @@
   .kb-ctrls .btn { background: var(--panel); box-shadow: 0 2px 10px rgba(0,0,0,.5); }
   .kb-stage { height: 68vh; max-height: 640px; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
   .kb-stage:active { cursor: grabbing; }
-  .kb-bracket { display: flex; gap: 44px; --hg: 22px; width: max-content; transform-origin: 0 0; }
+  /* Two-sided bracket */
+  #koBracket { transform-origin: 0 0; width: max-content; }
+  .kb-bracket-two { display: flex; gap: 44px; --hg: 22px; width: max-content; align-items: flex-start; }
+  .kb-half { display: flex; gap: 44px; }
+  .kb-half-r { flex-direction: row-reverse; }
+  .kb-final-col { align-self: stretch; display: flex; flex-direction: column; width: 152px; }
+  .kb-final-col .kb-cells { flex: 1; display: flex; flex-direction: column; justify-content: center; }
   .kb-col { display: flex; flex-direction: column; width: 152px; }
   .kb-head { height: 26px; font-family: var(--font-display); font-weight: 400; font-size: 19px; letter-spacing: 1px; text-transform: uppercase; color: var(--signal); text-align: center; }
   .kb-cells { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
   .kb-slot { position: relative; display: flex; align-items: center; }
   .kb-cell { position: relative; width: 100%; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
   .kb-cell.kb-hasright::after { content: ""; position: absolute; right: calc(-1 * var(--hg)); top: 50%; width: var(--hg); height: 2px; background: var(--line); }
+  .kb-cell.kb-hasleft::after  { content: ""; position: absolute; left: calc(-1 * var(--hg));  top: 50%; width: var(--hg); height: 2px; background: var(--line); }
   .kb-team { display: flex; align-items: center; gap: 6px; padding: 7px 9px; font-size: 12px; font-weight: 700; color: var(--chalk); border-top: 1px solid var(--line-soft); }
   .kb-team:first-child { border-top: none; }
   .kb-team img { width: 18px; height: 13px; object-fit: cover; border-radius: 2px; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
   .kb-team span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kb-team.tbd { color: var(--muted); font-weight: 500; font-style: italic; }
-  .kb-join { position: absolute; left: calc(-1 * var(--hg)); top: 50%; transform: translateY(-50%); width: var(--hg); height: var(--conn, 0); border: 2px solid var(--line); border-right: none; border-radius: 5px 0 0 5px; }
+  .kb-join   { position: absolute; left:  calc(-1 * var(--hg)); top: 50%; transform: translateY(-50%); width: var(--hg); height: var(--conn,0); border: 2px solid var(--line); border-right: none; border-radius: 5px 0 0 5px; }
+  .kb-join-r { position: absolute; right: calc(-1 * var(--hg)); top: 50%; transform: translateY(-50%); width: var(--hg); height: var(--conn,0); border: 2px solid var(--line); border-left:  none; border-radius: 0 5px 5px 0; }
 
   /* ===== Seletor de modo (Fase de Grupos | Playoffs) ===== */
   .modebar { display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px; margin: 22px 0 2px; box-shadow: var(--shadow-card); }
+  .modebar:empty { display: none; }
   .modebtn { flex: 1; appearance: none; border: none; background: transparent; color: var(--muted); font-family: var(--font-base); font-weight: 800; font-size: 14px; letter-spacing: .3px; padding: 11px 14px; border-radius: 999px; cursor: pointer; transition: .18s cubic-bezier(.2,.8,.2,1); }
   .modebtn[aria-selected="true"] { background: var(--signal); color: var(--signal-deep); box-shadow: 0 6px 18px rgba(191,242,52,.3); }
   .modebtn:not([aria-selected="true"]):hover { color: var(--chalk); }
+  .modebtn[data-mode="grupos"] { opacity: 0.6; font-size: 13px; }
+  .modebtn[data-mode="grupos"][aria-selected="true"] { background: var(--panel-2); color: var(--muted); box-shadow: none; opacity: 1; }
   .ko-champ-mini { font-size: 13px; font-weight: 800; color: var(--gold); }
 
   /* ===== Jogo atual em destaque (aba Jogos) ===== */
