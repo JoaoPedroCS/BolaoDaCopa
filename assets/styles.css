@@ -405,7 +405,10 @@
   .ke-in { width: 52px; text-align: center; padding: 9px; font-size: 17px; font-weight: 800; -moz-appearance: textfield; }
   .ke-in::-webkit-outer-spin-button,
   .ke-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .ke-pen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 9px 0 2px; font-size: 13px; color: var(--muted); }
+  /* Desempate (pênaltis): painel centralizado e destacado */
+  .ke-pen { display: flex; flex-direction: column; align-items: center; gap: 11px; margin: 13px auto 4px; max-width: 440px; padding: 14px 16px; background: rgba(191,242,52,.06); border: 1px dashed rgba(191,242,52,.34); border-radius: 16px; text-align: center; }
+  .ke-pen-q { font-size: 13.5px; font-weight: 700; letter-spacing: .2px; color: var(--signal); }
+  .ke-pen-btns { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
   .ke-adv { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--chalk); font-family: var(--font-base); font-weight: 700; font-size: 13px; padding: 7px 13px; border-radius: 999px; cursor: pointer; transition: .15s; display: inline-flex; align-items: center; gap: 5px; }
   .ke-adv:hover { border-color: var(--signal); color: var(--signal); }
   .ke-adv.on { background: var(--signal); color: var(--signal-deep); border-color: var(--signal); box-shadow: 0 0 14px rgba(191,242,52,.4); }
@@ -418,21 +421,29 @@
   .ke-pick-l, .ke-pick-r { flex: 1; display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 12px; font-size: 14px; text-align: left; min-width: 0; }
   .ke-pick-r { justify-content: flex-end; flex-direction: row-reverse; }
   .ke-vsep { font-size: 18px; color: var(--muted); font-weight: 700; flex-shrink: 0; align-self: center; }
+  /* Caixa de "X" (oitavas+): mesma pegada visual do input de placar dos 16-avos */
+  .ke-xbox { width: 52px; height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: var(--panel-2); border-radius: 12px; cursor: pointer; }
+  .ke-xbox .ke-mark { font-size: 20px; opacity: .22; }
+  .ke-xbox:hover { border-color: var(--signal); }
+  .ke-xbox:hover .ke-mark { opacity: .5; color: var(--signal); }
+  .ke-xbox.on { background: var(--signal); border-color: var(--signal); box-shadow: 0 0 14px rgba(191,242,52,.4); }
+  .ke-xbox.on .ke-mark { opacity: 1; color: var(--signal-deep); }
+  .ke-xbox:disabled { cursor: default; opacity: .5; }
 
   /* ===== Bracket (aba Mata-mata) — zoom e arrasto ===== */
   .kb-wrap { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); overflow: hidden; box-shadow: var(--shadow-card); }
   .kb-ctrls { position: absolute; top: 10px; right: 10px; z-index: 5; display: flex; gap: 6px; }
   .kb-ctrls .btn { background: var(--panel); box-shadow: 0 2px 10px rgba(0,0,0,.5); }
-  .kb-stage { height: 68vh; max-height: 640px; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .kb-stage { height: 82vh; max-height: 920px; min-height: 560px; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
   .kb-stage:active { cursor: grabbing; }
-  /* Two-sided bracket */
+  /* Two-sided bracket — mais alto e menos largo */
   #koBracket { transform-origin: 0 0; width: max-content; }
-  .kb-bracket-two { display: flex; gap: 44px; --hg: 22px; width: max-content; align-items: flex-start; }
-  .kb-half { display: flex; gap: 44px; }
+  .kb-bracket-two { display: flex; gap: 26px; --hg: 16px; width: max-content; align-items: flex-start; }
+  .kb-half { display: flex; gap: 26px; }
   .kb-half-r { flex-direction: row-reverse; }
-  .kb-final-col { align-self: stretch; display: flex; flex-direction: column; width: 152px; }
+  .kb-final-col { align-self: stretch; display: flex; flex-direction: column; width: 134px; }
   .kb-final-col .kb-cells { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-  .kb-col { display: flex; flex-direction: column; width: 152px; }
+  .kb-col { display: flex; flex-direction: column; width: 134px; }
   .kb-head { height: 26px; font-family: var(--font-display); font-weight: 400; font-size: 19px; letter-spacing: 1px; text-transform: uppercase; color: var(--signal); text-align: center; }
   .kb-cells { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
   .kb-slot { position: relative; display: flex; align-items: center; }
@@ -488,6 +499,8 @@
     /* editor de placares do mata-mata: inputs e nomes cabem sem espremer */
     .ke-line { gap: 6px; }
     .ke-in { width: 44px; padding: 8px 4px; font-size: 15px; }
+    .ke-xbox { width: 44px; height: 40px; }
+    .ke-xbox .ke-mark { font-size: 18px; }
     .ke-side { font-size: 13px; }
     /* tabela de classificação mais compacta */
     .standings th, .standings td { padding: 11px 3px; font-size: 13px; }

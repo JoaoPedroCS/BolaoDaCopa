@@ -590,10 +590,22 @@ function koWinner(teams,pick){
   if(+pick.a>+pick.h) return teams[1];
   return pick.adv==="home"?teams[0]:(pick.adv==="away"?teams[1]:null);
 }
-// Foto do chaveamento AGORA: R32 pela classificação; fases seguintes a definir.
+// Foto do chaveamento AGORA: usa os confrontos REAIS do worker (times definidos a
+// cada jogo) e cai na projeção pela classificação só nos 16-avos quando o worker
+// ainda não trouxe o confronto. Conforme os jogos terminam, o worker já preenche
+// os times da fase seguinte (ex.: vencedor do 73 vira mandante do 90), então aqui
+// basta espelhar m.home/m.away — o avanço propaga sozinho.
 function koResolveProjection(){
-  const M={...koSeeds()};
-  for(const mid of [89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104]) M[mid]=[null,null];
+  const M={...koSeeds()};                         // R32 projetado (fallback)
+  const cr=crestMap();
+  const side=(name,crest)=> name!=null?{name,crest:crest||cr[name]||""}:null;
+  for(let mid=73; mid<=104; mid++){
+    const m=MATCHES.find(x=>+x.id===mid);
+    if(!m){ if(mid>=89) M[mid]=[null,null]; continue; }
+    const a=side(m.home,m.homeCrest), b=side(m.away,m.awayCrest);
+    if(a||b) M[mid]=[a,b];                         // confronto real já definido
+    else if(mid>=89) M[mid]=[null,null];           // oitavas+ ainda a definir
+  }
   return M;
 }
 // Bracket pessoal: o vencedor que a pessoa previu avança pra próxima fase.
@@ -617,7 +629,7 @@ const KO_BRACKET_COLS=[
   {label:"Semis",   ids:[101,102], childN:4},
   {label:"Final",   ids:[104], childN:2}
 ];
-const KO_H=1040;   // altura base (px) da área de jogos, p/ alinhar as fases
+const KO_H=1320;   // altura base (px) da área de jogos, p/ alinhar as fases (mais alto = menos "wide")
 let MEUS_OPEN={grupos:false, mata:false};
 let koZoom=1, koPanX=12, koPanY=12, koViewInit=false;
 function koCell(teams, cellClass){
@@ -707,9 +719,13 @@ function koEditorHtml(picks){
       if(KO_R32_IDS.has(mid)){
         const hv=pk&&pk.h!=null?pk.h:"", av=pk&&pk.a!=null?pk.a:"";
         const draw=known && hv!=="" && av!=="" && (+hv===+av);
-        const pen=draw?`<div class="ke-pen"><span>Empate — quem passa nos pênaltis?</span>
-          <button class="ke-adv${pk&&pk.adv==='home'?' on':''}" data-mid="${mid}" data-adv="home"><span class="ke-mark">✕</span>${esc(A.name)}</button>
-          <button class="ke-adv${pk&&pk.adv==='away'?' on':''}" data-mid="${mid}" data-adv="away"><span class="ke-mark">✕</span>${esc(B.name)}</button></div>`:"";
+        const pen=draw?`<div class="ke-pen">
+          <span class="ke-pen-q">⚽ Empate! Quem passa nos pênaltis?</span>
+          <div class="ke-pen-btns">
+            <button class="ke-adv${pk&&pk.adv==='home'?' on':''}" data-mid="${mid}" data-adv="home"><span class="ke-mark">✕</span>${esc(A.name)}</button>
+            <button class="ke-adv${pk&&pk.adv==='away'?' on':''}" data-mid="${mid}" data-adv="away"><span class="ke-mark">✕</span>${esc(B.name)}</button>
+          </div>
+        </div>`:"";
         return `<div class="ke-row${known?'':' off'}">
           <div class="ke-line">
             <div class="ke-side">${fl(A)}${nm(A)}</div>
@@ -722,10 +738,12 @@ function koEditorHtml(picks){
       } else {
         const picked=pk?pk.adv:null;
         return `<div class="ke-row${known?'':' off'}">
-          <div class="ke-pick-row">
-            <button class="ke-adv ke-pick-l${picked==='home'?' on':''}" data-mid="${mid}" data-adv="home"${known?'':' disabled'}><span class="ke-mark">✕</span>${fl(A)}${nm(A)}</button>
-            <span class="ke-vsep">×</span>
-            <button class="ke-adv ke-pick-r${picked==='away'?' on':''}" data-mid="${mid}" data-adv="away"${known?'':' disabled'}><span class="ke-mark">✕</span>${nm(B)}${fl(B)}</button>
+          <div class="ke-line">
+            <div class="ke-side">${fl(A)}${nm(A)}</div>
+            <button class="ke-adv ke-xbox${picked==='home'?' on':''}" data-mid="${mid}" data-adv="home"${known?'':' disabled'} aria-label="${esc(A?A.name:'')} avança"><span class="ke-mark">✕</span></button>
+            <span class="vs">×</span>
+            <button class="ke-adv ke-xbox${picked==='away'?' on':''}" data-mid="${mid}" data-adv="away"${known?'':' disabled'} aria-label="${esc(B?B.name:'')} avança"><span class="ke-mark">✕</span></button>
+            <div class="ke-side away">${nm(B)}${fl(B)}</div>
           </div>
         </div>`;
       }
