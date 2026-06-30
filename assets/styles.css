@@ -513,8 +513,8 @@
   /* ===== Cards de partida do mata-mata: destaque do vencedor + penaltis ===== */
   .ko-center { display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .ko-nums { display: flex; align-items: center; gap: 12px; }
-  .ko-pen-score { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .3px; white-space: nowrap; }
-  .ko-pen-score b { color: var(--chalk); font-weight: 800; }
+  .ko-pen-score { font-size: 13px; font-weight: 800; color: var(--chalk); letter-spacing: .5px; white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 1; }
+  .ko-pen-score .ko-pen-x { color: var(--muted); font-weight: 600; margin: 0 3px; }
   .ko-match.fin .team.ko-win .tn { color: var(--signal); font-weight: 900; text-shadow: 0 0 14px rgba(191,242,52,.35); }
   .ko-match .team.ko-lose { opacity: .5; }
   .ko-trophy { margin: 0 5px; font-size: 15px; filter: drop-shadow(0 0 7px rgba(255,209,71,.55)); }

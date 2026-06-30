@@ -199,6 +199,20 @@ function openEntry(force){
 /* ============================================================ DADOS */
 // Um jogo só é "definitivo" quando terminou COM placar válido.
 function isFinal(m){ return !!(m && m.status==="FINISHED" && m.homeScore!=null && m.awayScore!=null); }
+/* Corrige o placar do mata-mata quando a fonte soma os gols dos pênaltis ao tempo
+   normal (bug da football-data v4). Um jogo decidido nos pênaltis é, por definição,
+   empate no tempo normal/prorrogação. Se o placar não é empate mas (placar − pênaltis)
+   é, devolvemos o placar real (ex.: 4×5 com pên 3–4 vira 1×1) e garantimos o koWinner.
+   Idempotente: placar já correto (empate) não é alterado. */
+function fixKoPenScore(m){
+  if(!m || m.penHome==null || m.penAway==null) return m;
+  if(m.homeScore==null || m.awayScore==null) return m;
+  let h=+m.homeScore, a=+m.awayScore; const ph=+m.penHome, pa=+m.penAway;
+  let out=m;
+  if(h!==a && (h-ph)===(a-pa)){ out={...m, homeScore:h-ph, awayScore:a-pa}; h-=ph; a-=pa; }
+  if(h===a && out.koWinner==null){ if(out===m) out={...m}; out.koWinner = ph>pa?"home":"away"; }
+  return out;
+}
 function updateSyncInfo(d){
   const when=d&&d.updatedAt?new Date(d.updatedAt):null;
   const live=MATCHES.some(m=>m.status==="IN_PLAY");
@@ -231,7 +245,7 @@ async function loadMatches(){
     return Object.keys(patch).length?{...f,...patch}:f;
   });
   for(const [id,m] of frozen){ if(!merged.some(x=>x.id===id)) merged.push(m); }   // finalizado sumiu do fetch? mantém
-  MATCHES=merged.sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
+  MATCHES=merged.map(fixKoPenScore).sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
   updateSyncInfo(d);
 }
 async function loadPredictions(){
@@ -810,6 +824,7 @@ function ensureR32(cb){
 // IDs dos 16-avos e pontuação por fase (classificado certo).
 const KO_R32_IDS=new Set([73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88]);
 const KO_QUAL_PTS={r32:5,r16:10,qf:20,sf:40,third:60,final:80};
+const KO_PHASE_LABEL={r32:"16-avos de final",r16:"Oitavas de final",qf:"Quartas de final",sf:"Semifinal",third:"Disputa de 3º lugar",final:"Final"};
 function koPhaseFor(mid){
   const id=+mid;
   if(KO_R32_IDS.has(id)) return "r32";
@@ -915,9 +930,10 @@ function koFixtureCard(mid, teams){
   const homeCls = adv==='home'?' ko-win':(adv==='away'?' ko-lose':'');
   const awayCls = adv==='away'?' ko-win':(adv==='home'?' ko-lose':'');
   const trophy = `<span class="ko-trophy" title="Classificado">🏆</span>`;
-  const penLine = hasPen?`<div class="ko-pen-score">pênaltis <b>${m.penHome}</b> – <b>${m.penAway}</b></div>`:"";
+  const penLine = hasPen?`<div class="ko-pen-score">${m.penHome} <span class="ko-pen-x">–</span> ${m.penAway}</div>`:"";
+  const phaseLbl = KO_PHASE_LABEL[koPhaseFor(mid)] || `Jogo ${mid}`;
   return `<div class="match ko-match${fin?' fin':''}" data-id="${mid}" style="cursor:pointer">
-    <div class="top"><span class="g">Jogo ${mid}</span>${badge}</div>
+    <div class="top"><span class="g">${esc(phaseLbl)}</span>${badge}</div>
     <div class="scoreline">
       <div class="team home${homeCls}">${fl(a)}${tn(a)}${adv==='home'?trophy:''}</div>
       <div class="ko-center"><div class="ko-nums"><span class="bignum">${show?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${show?m.awayScore:"–"}</span></div>${penLine}</div>
@@ -988,24 +1004,45 @@ function openKoMatch(mid){
     const pk=(p.ko&&typeof p.ko[mid]==="object")?p.ko[mid]:null;
     const hasScore=isR32 && pk && pk.h!=null && pk.a!=null;
     const hasAdv=!!(pk && (pk.adv!=null || hasScore));
-    return { p, pk, hasScore, hasAdv,
+    // Pontos do palpiteiro NESTE jogo (so quando o jogo terminou).
+    let pts=null, sp=0, qp=0;
+    if(fin && pk){
+      const predAdv=koPickedAdvancer(pk);
+      if(isR32 && hasScore){
+        sp=pointsForKo90(+pk.h,+pk.a,+m.homeScore,+m.awayScore);
+        qp=(advReal&&predAdv===advReal)?KO_QUAL_PTS.r32:0;
+        pts=sp+qp;
+      } else if(phase&&phase!=="r32"&&predAdv){
+        pts=(advReal&&predAdv===advReal)?KO_QUAL_PTS[phase]:0;
+      }
+    }
+    return { p, pk, hasScore, hasAdv, pts, sp, qp,
       has: isR32?hasScore:hasAdv,
       sal: hasScore?(+pk.h - +pk.a):0,
       tot: hasScore?(+pk.h + +pk.a):0 };
   });
-  // Ordem: maior vitoria do mandante -> maior derrota; empate -> alfabetico.
-  rows.sort((a,b)=>{
-    if(a.has!==b.has) return (b.has?1:0)-(a.has?1:0);
+  // Desempate por placar palpitado: maior vitoria do mandante -> maior derrota do
+  // mandante (saldo casa-fora desc; depois mais gols; depois alfabetico).
+  const cmpByPick=(a,b)=>{
+    if(a.has!==b.has) return (b.has?1:0)-(a.has?1:0);   // quem palpitou antes
     if(!a.has) return a.p.name.localeCompare(b.p.name,"pt");
     if(isR32){
-      if(b.sal!==a.sal) return b.sal-a.sal;
-      if(a.sal===0) return a.p.name.localeCompare(b.p.name,"pt");
+      if(b.sal!==a.sal) return b.sal-a.sal;             // maior vitoria do mandante no topo
       if(b.tot!==a.tot) return b.tot-a.tot;
       return a.p.name.localeCompare(b.p.name,"pt");
     }
     const oa=a.pk.adv==='home'?0:1, ob=b.pk.adv==='home'?0:1;
     if(oa!==ob) return oa-ob;
     return a.p.name.localeCompare(b.p.name,"pt");
+  };
+  // Jogo encerrado: ranking PRIMARIO por PONTOS (desc). Empate em pontos -> da maior
+  // vitoria do mandante ate a maior derrota. Jogo nao encerrado: so o placar palpitado.
+  rows.sort((a,b)=>{
+    if(fin){
+      const pa=a.pts==null?-Infinity:a.pts, pb=b.pts==null?-Infinity:b.pts;
+      if(pb!==pa) return pb-pa;
+    }
+    return cmpByPick(a,b);
   });
 
   const list = rows.map(r=>{
@@ -1018,16 +1055,12 @@ function openKoMatch(mid){
       pickTxt=`→ ${r.pk.adv==='home'?esc(A?A.name:'?'):esc(B?B.name:'?')}`;
     }
     let tag=`<span class="ptag pending">··</span>`;
-    if(fin && r.pk){
-      const predAdv=koPickedAdvancer(r.pk);
+    if(fin && r.pk && r.pts!=null){
       if(isR32 && r.hasScore){
-        const sp=pointsForKo90(+r.pk.h,+r.pk.a,+m.homeScore,+m.awayScore);
-        const qp=(advReal&&predAdv===advReal)?KO_QUAL_PTS.r32:0;
-        const t=sp+qp, cls=t===0?"p0":sp===5?"p5":sp===3?"p3":"p25";
-        tag=`<span class="ptag ${cls}">${fmtPts(t)} pts${qp>0?` +${qp}Q`:""}</span>`;
-      } else if(phase&&phase!=="r32"&&predAdv){
-        const pts=(advReal&&predAdv===advReal)?KO_QUAL_PTS[phase]:0;
-        tag=`<span class="ptag ${pts>0?'p5':'p0'}">${pts} pts</span>`;
+        const cls=r.pts===0?"p0":r.sp===5?"p5":r.sp===3?"p3":"p25";
+        tag=`<span class="ptag ${cls}">${fmtPts(r.pts)} pts${r.qp>0?` +${r.qp}Q`:""}</span>`;
+      } else if(phase&&phase!=="r32"){
+        tag=`<span class="ptag ${r.pts>0?'p5':'p0'}">${r.pts} pts</span>`;
       }
     }
     return `<div class="pick-line${mine?' me':''}">
@@ -1040,9 +1073,11 @@ function openKoMatch(mid){
   const lmt=live?liveMinuteText(m):"";
   const stTxt = fin?'Jogo Encerrado':(live?('● Ao vivo'+(lmt?` · ${esc(lmt)}`:'')):'Aguardando início');
   const hasPen=fin && m.penHome!=null && m.penAway!=null;
-  const penNote=hasPen?`<div style="text-align:center;font-size:13px;color:var(--muted);margin:-4px 0 14px">pênaltis ${m.penHome}–${m.penAway}</div>`:"";
+  const penNote=hasPen?`<div style="text-align:center;font-size:13px;font-weight:600;color:var(--muted);margin:-6px 0 14px"><b style="color:var(--chalk)">${m.penHome}</b> – <b style="color:var(--chalk)">${m.penAway}</b></div>`:"";
   const note = (fin||live)?'' : (m?`<p style="color:var(--muted);margin-bottom:14px;font-size:14px;font-weight:600">${esc(kickoff(m))}</p>`:'');
-  const ptsInfo = isR32
+  const ptsInfo = fin
+    ? '<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Ordenado por pontos; em caso de empate, da maior vitória do mandante até a maior derrota.</p>'
+    : isR32
     ? '<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Ordenado da maior vitória do mandante até a maior derrota; empates em ordem alfabética.</p>'
     : '<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Quem cada um cravou para avançar.</p>';
 
