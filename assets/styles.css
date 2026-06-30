@@ -509,6 +509,12 @@
     .standings .st-flag { width: 20px; height: 14px; }
     /* seletor de modo e abas/accordeão */
     .modebtn { font-size: 13px; padding: 11px 8px; }
-    .acc > summary { font-size: 14px; padding: 14px 14px; }
-    .pgrid { grid-template-columns: 1fr; }   /* cards de palpiteiros em 1 coluna no celular */
-  }
+    .acc > summary { font-size: 14px;
+  /* ===== Cards de partida do mata-mata: destaque do vencedor + penaltis ===== */
+  .ko-center { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .ko-nums { display: flex; align-items: center; gap: 12px; }
+  .ko-pen-score { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .3px; white-space: nowrap; }
+  .ko-pen-score b { color: var(--chalk); font-weight: 800; }
+  .ko-match.fin .team.ko-win .tn { color: var(--signal); font-weight: 900; text-shadow: 0 0 14px rgba(191,242,52,.35); }
+  .ko-match .team.ko-lose { opacity: .5; }
+  .ko-trophy { margin: 0 5px; font-size: 15px; filter: drop-shadow(0 0 7px rgba(255,209,71,.55)); }

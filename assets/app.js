@@ -895,40 +895,69 @@ function koFixtureCard(mid, teams){
   const fin=!!(m&&m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null);
   const live=!!(m&&m.status==="IN_PLAY"&&m.homeScore!=null);
   const show=fin||live;
+  const adv=fin?koActualAdvancer(m):null;                  // "home" | "away" | null
+  const hasPen=fin && m.penHome!=null && m.penAway!=null;   // placar de penaltis (se o worker enviar)
   const tn=(t)=> t?`<span class="tn">${esc(t.name)}</span>`:`<span class="tn" style="color:var(--muted);font-weight:600">A definir</span>`;
   const fl=(t)=> `<img src="${esc((t&&t.crest)||'')}" alt="" style="${t&&t.crest?'':'visibility:hidden'}" onerror="this.style.visibility='hidden'">`;
   const lmt=live?liveMinuteText(m):"";
   const badge = fin?`<span class="status fin">Encerrado</span>`
     : live?`<span class="status live">● Ao vivo${lmt?` ${esc(lmt)}`:""}</span>`
     : `<span class="status">${m?esc(kickoff(m)):"A jogar"}</span>`;
-  // Empate decidido nos pênaltis: mostra quem avançou (m.koWinner vem do worker)
-  let pen="";
-  if(fin && +m.homeScore===+m.awayScore && m.koWinner){
-    const wn = m.koWinner==="home" ? (a&&a.name) : (b&&b.name);
-    if(wn) pen=`<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px">Pênaltis: <b style="color:var(--chalk)">${esc(wn)}</b> avança</div>`;
-  }
-  return `<div class="match" style="cursor:default">
+  const homeCls = adv==='home'?' ko-win':(adv==='away'?' ko-lose':'');
+  const awayCls = adv==='away'?' ko-win':(adv==='home'?' ko-lose':'');
+  const trophy = `<span class="ko-trophy" title="Classificado">🏆</span>`;
+  const penLine = hasPen?`<div class="ko-pen-score">pênaltis <b>${m.penHome}</b> – <b>${m.penAway}</b></div>`:"";
+  return `<div class="match ko-match${fin?' fin':''}" style="cursor:default">
     <div class="top"><span class="g">Jogo ${mid}</span>${badge}</div>
     <div class="scoreline">
-      <div class="team home">${fl(a)}${tn(a)}</div>
-      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">${show?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${show?m.awayScore:"–"}</span></div>
-      <div class="team away">${tn(b)}${fl(b)}</div>
-    </div>${pen}</div>`;
+      <div class="team home${homeCls}">${fl(a)}${tn(a)}${adv==='home'?trophy:''}</div>
+      <div class="ko-center"><div class="ko-nums"><span class="bignum">${show?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${show?m.awayScore:"–"}</span></div>${penLine}</div>
+      <div class="team away${awayCls}">${adv==='away'?trophy:''}${tn(b)}${fl(b)}</div>
+    </div>
+  </div>`;
+}
+let KO_CUR=false;   // filtro "Jogo atual" na aba Partidas do mata-mata
+// Jogo do mata-mata "atual": o que esta AO VIVO; senao o proximo a acontecer (nao finalizado).
+function currentKoMatch(){
+  const cand=MATCHES.filter(m=>koPhaseFor(m.id)&&m.status!=="FINISHED");
+  if(!cand.length) return null;
+  cand.sort((a,b)=>{
+    const la=a.status==="IN_PLAY"?0:1, lb=b.status==="IN_PLAY"?0:1;
+    if(la!==lb) return la-lb;                        // ao vivo primeiro
+    return new Date(a.utcDate)-new Date(b.utcDate);  // depois, o mais proximo no tempo
+  });
+  return cand[0];
 }
 function renderKoPartidas(){
   if(!R32T) return ensureR32(renderKoPartidas);
   const M=koResolveProjection();
-  if(KO_PHASE_AUTO){   // 1a fase com confronto definido (hoje: 16-avos, pois não há resultados de KO)
+  const cur=currentKoMatch();
+  if(KO_PHASE_AUTO){   // 1a fase com confronto definido
     KO_PHASE=0;
     for(let i=0;i<KO_PHASES.length;i++){ if(KO_PHASES[i][1].some(mid=>M[mid]&&M[mid][0]&&M[mid][1])){ KO_PHASE=i; break; } }
   }
   const chips=KO_PHASES.map((p,i)=>`<button class="chip" data-ph="${i}" aria-pressed="${KO_PHASE===i}">${esc(p[0])}</button>`).join("");
+  // "Jogo atual" NAO concorre com a fase: apenas fixa o jogo atual no topo.
+  const curChip = cur?`<div class="filters"><button class="chip" id="koCurToggle" aria-pressed="${KO_CUR}">${KO_CUR?'✓ ':''}⏱ Jogo atual</button></div>`:"";
   const [label,ids]=KO_PHASES[KO_PHASE];
-  const cards=ids.map(mid=>koFixtureCard(mid, M[mid])).join("");
-  $("#content").innerHTML=`<div class="ko-note">Partidas do mata-mata por fase. Os 16-avos vêm da classificação atual (projeção); as fases seguintes aparecem conforme os jogos acontecem.</div>
+  // ordem cronologica (data e hora do jogo); se "Jogo atual" ligado, tira o atual da lista (vai no topo)
+  const ordered=ids.slice().filter(mid=> !(KO_CUR&&cur&&+mid===+cur.id)).sort((x,y)=>{
+    const mx=MATCHES.find(z=>+z.id===+x), my=MATCHES.find(z=>+z.id===+y);
+    return new Date(mx?mx.utcDate:0) - new Date(my?my.utcDate:0);
+  });
+  let curHtml="";
+  if(KO_CUR && cur){
+    const liveC=cur.status==="IN_PLAY";
+    const head=liveC?`<span class="cur-dot"></span> Ao vivo agora`:'⏱ Proximo jogo';
+    curHtml=`<div class="cur-card${liveC?' live':''}"><div class="cur-head${liveC?' live':''}">${head}</div>${koFixtureCard(+cur.id, M[+cur.id])}</div>`;
+  }
+  const cards=ordered.map(mid=>koFixtureCard(mid, M[mid])).join("");
+  $("#content").innerHTML=`<div class="ko-note">Partidas do mata-mata por fase, em ordem de data e hora.</div>
     <div class="filters">${chips}</div>
+    ${curChip}${curHtml}
     <div class="roundhead" style="margin-top:8px">${esc(label)}</div>${cards}`;
   $$(".chip[data-ph]").forEach(c=>c.onclick=()=>{ KO_PHASE_AUTO=false; KO_PHASE=+c.dataset.ph; renderKoPartidas(); });
+  if($("#koCurToggle")) $("#koCurToggle").onclick=()=>{ KO_CUR=!KO_CUR; renderKoPartidas(); };
 }
 
 /* ---- Playoffs: Palpiteiros ---- */
@@ -1218,45 +1247,7 @@ setInterval(()=>{
   Promise.all(jobs).then(()=>{ applyLive(); if(!$("#scrim").classList.contains("open")) render(); }).catch(()=>{});
 }, REFRESH_MS);
 
-// Relogio ao vivo: atualiza só os minutos na tela (sem re-render) a cada 20s,
-// pra estimativa "correr" suave entre os fetches de 60s.
-setInterval(()=>{
-  const els=$$(".js-livemin"); if(!els.length) return;
-  for(const el of els){
-    const m=MATCHES.find(x=>x.id===el.dataset.mid);
-    const t=m?liveMinuteText(m):"";
-    if(t && el.textContent!==t) el.textContent=t;
-  }
-}, 20*1000);
-
-loadAll();romEntry){ if(ENTRY_LOCK&&!fromEntry) return; ENTRY_LOCK=false; $("#scrim").classList.remove("open"); $("#modal").innerHTML=""; document.body.style.overflow=""; }
-$("#scrim").addEventListener("click",e=>{ if(e.target.id==="scrim") closeModal(); });
-
-/* ============================================================ EVENTOS */
-$("#switchBtn").onclick=()=>openEntry(false);
-window.addEventListener("beforeunload",e=>{ if(DIRTY){ e.preventDefault(); e.returnValue=""; }});
-// Auto-atualizacao. Com fonte na cloud (matchesUrl ou liveUrl, cacheada e barata) atualiza
-// a cada 60s; sem ela, recarrega tudo a cada 5 min pra nao estourar a cota do JsonBin.
-const FAST = !!(CONFIG.matchesUrl || CONFIG.liveUrl);
-const REFRESH_MS = FAST ? 60*1000 : 5*60*1000;
-let lastFull = Date.now();
-setInterval(()=>{
-  if(DIRTY) return;
-  const jobs=[];
-  if(CONFIG.matchesUrl){
-    // O worker entrega tudo (calendario+placar+ao vivo) cacheado: recarrega a lista sempre.
-    jobs.push(loadMatches());
-    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadPredictions()); }
-  }else if(CONFIG.liveUrl){
-    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadMatches()); }
-    jobs.push(loadLive());
-  }else{
-    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadMatches()); jobs.push(loadPredictions()); }
-  }
-  Promise.all(jobs).then(()=>{ applyLive(); if(!$("#scrim").classList.contains("open")) render(); }).catch(()=>{});
-}, REFRESH_MS);
-
-// Relogio ao vivo: atualiza só os minutos na tela (sem re-render) a cada 20s,
+// Relogio ao vivo: atualiza so os minutos na tela (sem re-render) a cada 20s,
 // pra estimativa "correr" suave entre os fetches de 60s.
 setInterval(()=>{
   const els=$$(".js-livemin"); if(!els.length) return;
