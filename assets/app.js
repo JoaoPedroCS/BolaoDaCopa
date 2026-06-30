@@ -220,7 +220,16 @@ async function loadMatches(){
   // Só jogos NÃO finalizados são atualizados pela busca — um jogo que já aconteceu nunca mais "zera".
   const frozen=new Map();
   for(const m of MATCHES){ if(isFinal(m)) frozen.set(m.id, m); }
-  const merged=incoming.map(m=> frozen.has(m.id)?frozen.get(m.id):m);
+  const merged=incoming.map(m=>{
+    if(!frozen.has(m.id)) return m;
+    const f=frozen.get(m.id);
+    // Jogo ja finalizado: mantem o placar congelado, mas adota dados que podem chegar
+    // depois (placar de penaltis e quem avancou) — ex.: worker atualizado apos o jogo.
+    const patch={};
+    if(f.penHome==null && m.penHome!=null){ patch.penHome=m.penHome; patch.penAway=m.penAway; }
+    if(f.koWinner==null && m.koWinner!=null){ patch.koWinner=m.koWinner; }
+    return Object.keys(patch).length?{...f,...patch}:f;
+  });
   for(const [id,m] of frozen){ if(!merged.some(x=>x.id===id)) merged.push(m); }   // finalizado sumiu do fetch? mantém
   MATCHES=merged.sort((a,b)=> new Date(a.utcDate)-new Date(b.utcDate));
   updateSyncInfo(d);
@@ -907,7 +916,7 @@ function koFixtureCard(mid, teams){
   const awayCls = adv==='away'?' ko-win':(adv==='home'?' ko-lose':'');
   const trophy = `<span class="ko-trophy" title="Classificado">🏆</span>`;
   const penLine = hasPen?`<div class="ko-pen-score">pênaltis <b>${m.penHome}</b> – <b>${m.penAway}</b></div>`:"";
-  return `<div class="match ko-match${fin?' fin':''}" style="cursor:default">
+  return `<div class="match ko-match${fin?' fin':''}" data-id="${mid}" style="cursor:pointer">
     <div class="top"><span class="g">Jogo ${mid}</span>${badge}</div>
     <div class="scoreline">
       <div class="team home${homeCls}">${fl(a)}${tn(a)}${adv==='home'?trophy:''}</div>
@@ -958,6 +967,95 @@ function renderKoPartidas(){
     <div class="roundhead" style="margin-top:8px">${esc(label)}</div>${cards}`;
   $$(".chip[data-ph]").forEach(c=>c.onclick=()=>{ KO_PHASE_AUTO=false; KO_PHASE=+c.dataset.ph; renderKoPartidas(); });
   if($("#koCurToggle")) $("#koCurToggle").onclick=()=>{ KO_CUR=!KO_CUR; renderKoPartidas(); };
+  $$(".ko-match").forEach(el=>el.onclick=()=>openKoMatch(el.dataset.id));
+}
+
+/* ---- Detalhe de um jogo do mata-mata (modal): palpites de todos ---- */
+function openKoMatch(mid){
+  mid=+mid;
+  const m=MATCHES.find(x=>+x.id===mid);
+  const Mp=koResolveProjection(); const teams=Mp[mid]||[null,null];
+  const A=teams[0], B=teams[1];
+  const isR32=KO_R32_IDS.has(mid);
+  const phase=koPhaseFor(mid);
+  const fin=!!(m&&m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null);
+  const live=!!(m&&m.status==="IN_PLAY"&&m.homeScore!=null);
+  const show=fin||live;
+  const advReal=fin?koActualAdvancer(m):null;
+  const nmeId=me()&&me().id;
+
+  let rows=PROFILES.map(p=>{
+    const pk=(p.ko&&typeof p.ko[mid]==="object")?p.ko[mid]:null;
+    const hasScore=isR32 && pk && pk.h!=null && pk.a!=null;
+    const hasAdv=!!(pk && (pk.adv!=null || hasScore));
+    return { p, pk, hasScore, hasAdv,
+      has: isR32?hasScore:hasAdv,
+      sal: hasScore?(+pk.h - +pk.a):0,
+      tot: hasScore?(+pk.h + +pk.a):0 };
+  });
+  // Ordem: maior vitoria do mandante -> maior derrota; empate -> alfabetico.
+  rows.sort((a,b)=>{
+    if(a.has!==b.has) return (b.has?1:0)-(a.has?1:0);
+    if(!a.has) return a.p.name.localeCompare(b.p.name,"pt");
+    if(isR32){
+      if(b.sal!==a.sal) return b.sal-a.sal;
+      if(a.sal===0) return a.p.name.localeCompare(b.p.name,"pt");
+      if(b.tot!==a.tot) return b.tot-a.tot;
+      return a.p.name.localeCompare(b.p.name,"pt");
+    }
+    const oa=a.pk.adv==='home'?0:1, ob=b.pk.adv==='home'?0:1;
+    if(oa!==ob) return oa-ob;
+    return a.p.name.localeCompare(b.p.name,"pt");
+  });
+
+  const list = rows.map(r=>{
+    const mine=nmeId&&r.p.id===nmeId;
+    let pickTxt="—";
+    if(r.hasScore){
+      pickTxt=`${r.pk.h} – ${r.pk.a}`;
+      if(+r.pk.h===+r.pk.a && r.pk.adv) pickTxt+=` <span style="color:var(--muted);font-size:12px">(pên: ${r.pk.adv==='home'?esc(A?A.name:''):esc(B?B.name:'')})</span>`;
+    } else if(r.hasAdv && r.pk.adv){
+      pickTxt=`→ ${r.pk.adv==='home'?esc(A?A.name:'?'):esc(B?B.name:'?')}`;
+    }
+    let tag=`<span class="ptag pending">··</span>`;
+    if(fin && r.pk){
+      const predAdv=koPickedAdvancer(r.pk);
+      if(isR32 && r.hasScore){
+        const sp=pointsForKo90(+r.pk.h,+r.pk.a,+m.homeScore,+m.awayScore);
+        const qp=(advReal&&predAdv===advReal)?KO_QUAL_PTS.r32:0;
+        const t=sp+qp, cls=t===0?"p0":sp===5?"p5":sp===3?"p3":"p25";
+        tag=`<span class="ptag ${cls}">${fmtPts(t)} pts${qp>0?` +${qp}Q`:""}</span>`;
+      } else if(phase&&phase!=="r32"&&predAdv){
+        const pts=(advReal&&predAdv===advReal)?KO_QUAL_PTS[phase]:0;
+        tag=`<span class="ptag ${pts>0?'p5':'p0'}">${pts} pts</span>`;
+      }
+    }
+    return `<div class="pick-line${mine?' me':''}">
+      <div class="pl-who">${avatar(r.p)}<span class="nm">${esc(r.p.name)}${mine?'<span class="youtag">Você</span>':''}</span></div>
+      <div class="pl-right"><span class="pscore${r.has?'':' none'}">${pickTxt}</span>${tag}</div></div>`;
+  }).join("") || `<div class="empty">Ninguém palpitou ainda.</div>`;
+
+  const tnm=(t)=> t?esc(t.name):'A definir';
+  const flg=(t)=>`<img src="${esc((t&&t.crest)||'')}" alt="" style="${t&&t.crest?'':'visibility:hidden'}" onerror="this.style.visibility='hidden'">`;
+  const lmt=live?liveMinuteText(m):"";
+  const stTxt = fin?'Jogo Encerrado':(live?('● Ao vivo'+(lmt?` · ${esc(lmt)}`:'')):'Aguardando início');
+  const hasPen=fin && m.penHome!=null && m.penAway!=null;
+  const penNote=hasPen?`<div style="text-align:center;font-size:13px;color:var(--muted);margin:-4px 0 14px">pênaltis ${m.penHome}–${m.penAway}</div>`:"";
+  const note = (fin||live)?'' : (m?`<p style="color:var(--muted);margin-bottom:14px;font-size:14px;font-weight:600">${esc(kickoff(m))}</p>`:'');
+  const ptsInfo = isR32
+    ? '<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Ordenado da maior vitória do mandante até a maior derrota; empates em ordem alfabética.</p>'
+    : '<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Quem cada um cravou para avançar.</p>';
+
+  $("#modal").innerHTML=`<button class="x" id="m-x">✕</button>
+    <span class="status ${fin?'fin':(live?'live':'')}" style="display:inline-block;margin-bottom:12px;font-size:14px;">${stTxt}</span>
+    <div class="modal-score">
+      <div class="team home">${flg(A)}<span class="tn">${tnm(A)}</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">${show?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${show?m.awayScore:"–"}</span></div>
+      <div class="team away"><span class="tn">${tnm(B)}</span>${flg(B)}</div>
+    </div>
+    ${penNote}${note}${ptsInfo}
+    ${list}`;
+  openModal(); $("#m-x").onclick=()=>closeModal();
 }
 
 /* ---- Playoffs: Palpiteiros ---- */
