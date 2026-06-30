@@ -632,10 +632,13 @@ const KO_BRACKET_COLS=[
 const KO_H=1320;   // altura base (px) da área de jogos, p/ alinhar as fases (mais alto = menos "wide")
 let MEUS_OPEN={grupos:false, mata:false};
 let koZoom=1, koPanX=12, koPanY=12, koViewInit=false;
-function koCell(teams, cellClass){
-  const slot=(t)=> t?`<div class="kb-team"><img src="${esc(t.crest||'')}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span></div>`:`<div class="kb-team tbd">A definir</div>`;
+function koCell(teams, cellClass, mid){
+  const m = mid!=null ? MATCHES.find(x=>+x.id===+mid) : null;
+  const fin = !!(m && m.status==="FINISHED" && m.homeScore!=null && m.awayScore!=null);
+  const adv = fin ? koActualAdvancer(m) : null;   // "home" | "away" | null
+  const slot=(t,which)=> t?`<div class="kb-team${adv===which?' kb-win':''}"><img src="${esc(t.crest||'')}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span></div>`:`<div class="kb-team tbd">A definir</div>`;
   const cls=typeof cellClass==='string'?cellClass:(cellClass?'kb-hasright':'');
-  return `<div class="kb-cell${cls?' '+cls:''}">${slot(teams[0])}${slot(teams[1])}</div>`;
+  return `<div class="kb-cell${cls?' '+cls:''}">${slot(teams[0],'home')}${slot(teams[1],'away')}</div>`;
 }
 function koMountPanZoom(stage,inner){
   let z=koZoom, ox=koPanX, oy=koPanY;
@@ -684,7 +687,7 @@ async function renderMataMata(){
     const cells=col.ids.map(mid=>{
       const join=col.childN
         ?`<span class="${isRight?'kb-join-r':'kb-join'}" style="--conn:${KO_H/col.childN}px"></span>`:"";
-      return `<div class="kb-slot">${join}${koCell(M[mid], isRight?'kb-hasleft':'kb-hasright')}</div>`;
+      return `<div class="kb-slot">${join}${koCell(M[mid], isRight?'kb-hasleft':'kb-hasright', mid)}</div>`;
     }).join("");
     return `<div class="kb-col"><div class="kb-head">${esc(col.label)}</div><div class="kb-cells">${cells}</div></div>`;
   };
@@ -692,7 +695,7 @@ async function renderMataMata(){
   const rightHtml=RIGHT.map(c=>buildCol(c,true)).join("");
   const finalHtml=`<div class="kb-col kb-final-col">
     <div class="kb-head">Final</div>
-    <div class="kb-cells"><div class="kb-slot">${koCell(M[104],'kb-hasleft kb-hasright')}</div></div>
+    <div class="kb-cells"><div class="kb-slot">${koCell(M[104],'kb-hasleft kb-hasright',104)}</div></div>
   </div>`;
   const bracket=`<div class="kb-bracket-two" style="height:${KO_H+26}px">
     <div class="kb-half">${leftHtml}</div>
@@ -887,16 +890,30 @@ function renderKoRanking(){
 
 /* ---- Playoffs: Partidas (por fase, projetadas) ---- */
 function koFixtureCard(mid, teams){
+  const m=MATCHES.find(x=>+x.id===+mid);
   const a=teams&&teams[0], b=teams&&teams[1];
+  const fin=!!(m&&m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null);
+  const live=!!(m&&m.status==="IN_PLAY"&&m.homeScore!=null);
+  const show=fin||live;
   const tn=(t)=> t?`<span class="tn">${esc(t.name)}</span>`:`<span class="tn" style="color:var(--muted);font-weight:600">A definir</span>`;
   const fl=(t)=> `<img src="${esc((t&&t.crest)||'')}" alt="" style="${t&&t.crest?'':'visibility:hidden'}" onerror="this.style.visibility='hidden'">`;
+  const lmt=live?liveMinuteText(m):"";
+  const badge = fin?`<span class="status fin">Encerrado</span>`
+    : live?`<span class="status live">● Ao vivo${lmt?` ${esc(lmt)}`:""}</span>`
+    : `<span class="status">${m?esc(kickoff(m)):"A jogar"}</span>`;
+  // Empate decidido nos pênaltis: mostra quem avançou (m.koWinner vem do worker)
+  let pen="";
+  if(fin && +m.homeScore===+m.awayScore && m.koWinner){
+    const wn = m.koWinner==="home" ? (a&&a.name) : (b&&b.name);
+    if(wn) pen=`<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px">Pênaltis: <b style="color:var(--chalk)">${esc(wn)}</b> avança</div>`;
+  }
   return `<div class="match" style="cursor:default">
-    <div class="top"><span class="g">Jogo ${mid}</span><span class="status">A jogar</span></div>
+    <div class="top"><span class="g">Jogo ${mid}</span>${badge}</div>
     <div class="scoreline">
       <div class="team home">${fl(a)}${tn(a)}</div>
-      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">–</span><span class="vs">×</span><span class="bignum">–</span></div>
+      <div style="display:flex;align-items:center;gap:12px"><span class="bignum">${show?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${show?m.awayScore:"–"}</span></div>
       <div class="team away">${tn(b)}${fl(b)}</div>
-    </div></div>`;
+    </div>${pen}</div>`;
 }
 function renderKoPartidas(){
   if(!R32T) return ensureR32(renderKoPartidas);
@@ -1175,6 +1192,44 @@ function openPickEditor(){
 /* ============================================================ MODAL */
 function openModal(){ $("#scrim").classList.add("open"); document.body.style.overflow="hidden"; }
 function closeModal(fromEntry){ if(ENTRY_LOCK&&!fromEntry) return; ENTRY_LOCK=false; $("#scrim").classList.remove("open"); $("#modal").innerHTML=""; document.body.style.overflow=""; }
+$("#scrim").addEventListener("click",e=>{ if(e.target.id==="scrim") closeModal(); });
+
+/* ============================================================ EVENTOS */
+$("#switchBtn").onclick=()=>openEntry(false);
+window.addEventListener("beforeunload",e=>{ if(DIRTY){ e.preventDefault(); e.returnValue=""; }});
+// Auto-atualizacao. Com fonte na cloud (matchesUrl ou liveUrl, cacheada e barata) atualiza
+// a cada 60s; sem ela, recarrega tudo a cada 5 min pra nao estourar a cota do JsonBin.
+const FAST = !!(CONFIG.matchesUrl || CONFIG.liveUrl);
+const REFRESH_MS = FAST ? 60*1000 : 5*60*1000;
+let lastFull = Date.now();
+setInterval(()=>{
+  if(DIRTY) return;
+  const jobs=[];
+  if(CONFIG.matchesUrl){
+    // O worker entrega tudo (calendario+placar+ao vivo) cacheado: recarrega a lista sempre.
+    jobs.push(loadMatches());
+    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadPredictions()); }
+  }else if(CONFIG.liveUrl){
+    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadMatches()); }
+    jobs.push(loadLive());
+  }else{
+    if(Date.now()-lastFull >= 5*60*1000){ lastFull=Date.now(); jobs.push(loadMatches()); jobs.push(loadPredictions()); }
+  }
+  Promise.all(jobs).then(()=>{ applyLive(); if(!$("#scrim").classList.contains("open")) render(); }).catch(()=>{});
+}, REFRESH_MS);
+
+// Relogio ao vivo: atualiza só os minutos na tela (sem re-render) a cada 20s,
+// pra estimativa "correr" suave entre os fetches de 60s.
+setInterval(()=>{
+  const els=$$(".js-livemin"); if(!els.length) return;
+  for(const el of els){
+    const m=MATCHES.find(x=>x.id===el.dataset.mid);
+    const t=m?liveMinuteText(m):"";
+    if(t && el.textContent!==t) el.textContent=t;
+  }
+}, 20*1000);
+
+loadAll();romEntry){ if(ENTRY_LOCK&&!fromEntry) return; ENTRY_LOCK=false; $("#scrim").classList.remove("open"); $("#modal").innerHTML=""; document.body.style.overflow=""; }
 $("#scrim").addEventListener("click",e=>{ if(e.target.id==="scrim") closeModal(); });
 
 /* ============================================================ EVENTOS */
