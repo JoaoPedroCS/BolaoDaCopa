@@ -433,31 +433,40 @@
 
   /* ===== Bracket (aba Mata-mata) — zoom e arrasto ===== */
   .kb-wrap { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); overflow: hidden; box-shadow: var(--shadow-card); }
-  .kb-ctrls { position: absolute; top: 10px; right: 10px; z-index: 5; display: flex; gap: 6px; }
-  .kb-ctrls .btn { background: var(--panel); box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+  .kb-ctrls { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; }
+  .kb-ctrls .btn { background: var(--panel); box-shadow: 0 2px 10px rgba(0,0,0,.35); }
   .kb-stage { height: 82vh; max-height: 920px; min-height: 560px; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
   .kb-stage:active { cursor: grabbing; }
-  /* Two-sided bracket — mais alto e menos largo */
+  /* Two-sided bracket — mais alto, menos largo e com letras/espaçamento maiores */
   #koBracket { transform-origin: 0 0; width: max-content; }
-  .kb-bracket-two { display: flex; gap: 26px; --hg: 16px; width: max-content; align-items: flex-start; }
-  .kb-half { display: flex; gap: 26px; }
+  .kb-bracket-two { display: flex; gap: 18px; --hg: 12px; width: max-content; align-items: flex-start; }
+  .kb-half { display: flex; gap: 18px; }
   .kb-half-r { flex-direction: row-reverse; }
-  .kb-final-col { align-self: stretch; display: flex; flex-direction: column; width: 134px; }
-  .kb-final-col .kb-cells { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-  .kb-col { display: flex; flex-direction: column; width: 134px; }
+  /* Coluna da Final/3º Lugar: tamanho NATURAL (não estica p/ altura da KO_H) e
+     centralizada na altura real das duas metades — senão fica "flutuando" bem
+     mais abaixo do que as semis, já que as metades são bem mais baixas que KO_H. */
+  .kb-final-col { align-self: center; display: flex; flex-direction: column; width: 108px; }
+  .kb-final-col .kb-cells { display: flex; flex-direction: column; justify-content: center; }
+  .kb-col { display: flex; flex-direction: column; width: 108px; }
   .kb-head { height: 26px; font-family: var(--font-display); font-weight: 400; font-size: 19px; letter-spacing: 1px; text-transform: uppercase; color: var(--signal); text-align: center; }
+  .kb-final-col .kb-third-head { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--muted); height: auto; }
   .kb-cells { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
   .kb-slot { position: relative; display: flex; align-items: center; }
   .kb-cell { position: relative; width: 100%; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
   .kb-cell.kb-hasright::after { content: ""; position: absolute; right: calc(-1 * var(--hg)); top: 50%; width: var(--hg); height: 2px; background: var(--line); }
   .kb-cell.kb-hasleft::after  { content: ""; position: absolute; left: calc(-1 * var(--hg));  top: 50%; width: var(--hg); height: 2px; background: var(--line); }
-  .kb-team { display: flex; align-items: center; gap: 6px; padding: 7px 9px; font-size: 12px; font-weight: 700; color: var(--chalk); border-top: 1px solid var(--line-soft); }
+  .kb-team { display: flex; align-items: center; gap: 6px; padding: 10px 10px; font-size: 14px; font-weight: 700; color: var(--chalk); border-top: 1px solid var(--line-soft); }
   .kb-team:first-child { border-top: none; }
-  .kb-team img { width: 18px; height: 13px; object-fit: cover; border-radius: 2px; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  .kb-team img { width: 20px; height: 15px; object-fit: cover; border-radius: 2px; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
   .kb-team span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kb-team.tbd { color: var(--muted); font-weight: 500; font-style: italic; }
   .kb-team.kb-win { color: var(--signal); background: rgba(191,242,52,.10); }
   .kb-team.kb-win span { font-weight: 800; }
+  .kb-score { margin-left: auto; flex: none; font-variant-numeric: tabular-nums; font-weight: 800; color: inherit; opacity: .85; }
+  .kb-team.kb-win .kb-score { opacity: 1; }
+  .kb-cell.kb-live { box-shadow: 0 0 0 1px var(--live), 0 2px 8px rgba(0,0,0,.35); }
+  .kb-cell.kb-live::before { content: "●"; position: absolute; top: 4px; right: 6px; font-size: 8px; color: var(--live); animation: kbLivePulse 1.4s ease-in-out infinite; }
+  @keyframes kbLivePulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
   .kb-join   { position: absolute; left:  calc(-1 * var(--hg)); top: 50%; transform: translateY(-50%); width: var(--hg); height: var(--conn,0); border: 2px solid var(--line); border-right: none; border-radius: 5px 0 0 5px; }
   .kb-join-r { position: absolute; right: calc(-1 * var(--hg)); top: 50%; transform: translateY(-50%); width: var(--hg); height: var(--conn,0); border: 2px solid var(--line); border-left:  none; border-radius: 0 5px 5px 0; }
 
@@ -510,12 +519,23 @@
     .standings .st-flag { width: 20px; height: 14px; }
     /* seletor de modo e abas/accordeão */
     .modebtn { font-size: 13px; padding: 11px 8px; }
-    .acc > summary { font-size: 14px;
-  /* ===== Cards de partida do mata-mata: destaque do vencedor + penaltis ===== */
-  .ko-center { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-  .ko-nums { display: flex; align-items: center; gap: 12px; }
-  .ko-pen-score { font-size: 13px; font-weight: 800; color: var(--chalk); letter-spacing: .5px; white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 1; }
-  .ko-pen-score .ko-pen-x { color: var(--muted); font-weight: 600; margin: 0 3px; }
-  .ko-match.fin .team.ko-win .tn { color: var(--signal); font-weight: 900; text-shadow: 0 0 14px rgba(191,242,52,.35); }
-  .ko-match .team.ko-lose { opacity: .5; }
-  .ko-trophy { margin: 0 5px; font-size: 15px; filter: drop-shadow(0 0 7px rgba(255,209,71,.55)); }
+    .acc > summary { font-size: 14px; }
+  }
+
+  /* ===== Cards de partida do mata-mata: destaque do vencedor + pênaltis ===== */
+  /* Placar do mata-mata: números bem espaçados e centralizados (inclui pênaltis);
+     o placar de pênaltis fica absoluto e centralizado logo abaixo, sem empurrar
+     os números pra cima (assim eles alinham com os nomes dos times). */
+  .ko-center { position: relative; display: flex; align-items: center; justify-content: center; min-height: 56px; }
+  .ko-nums { display: flex; align-items: center; justify-content: center; gap: 36px; }
+  .ko-nums .vs { font-size: 20px; opacity: .6; }
+  .ko-nums .bignum { min-width: 34px; text-align: center; transition: color .2s, opacity .2s; }
+  .ko-nums .bignum.ko-win-num { color: var(--signal); font-weight: 700; }
+  .ko-nums .bignum.ko-lose-num { opacity: .65; }
+  .ko-pen-score { position: absolute; top: calc(100% - 4px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 13px; font-weight: 800; color: var(--muted); letter-spacing: .5px; white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 1; }
+  .ko-pen-score .ko-pen-x { font-weight: 600; opacity: .7; }
+  .ko-pen-score .ko-pen-win { color: var(--signal); font-weight: 900; }
+  .ko-pen-score .ko-pen-lose { opacity: .55; }
+  .ko-match.has-pen .scoreline { padding-bottom: 32px; }
+  .ko-match.fin .team.ko-lose { opacity: .65; }
+  .ko-match.fin .team.ko-lose .tn { font-weight: 700; }

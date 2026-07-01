@@ -54,7 +54,7 @@ let GROUP_FILTER="ALL";
 let JOGOS_ROUND="ALL";
 let JOGOS_ROUND_AUTO=false;  // false = mantém "Todas as Rodadas" por padrão
 let SHOW_CURRENT=false;      // desativado — fase de grupos encerrada
-let IDENTITY=localStorage.getItem("bolao_identity")||null; 
+let IDENTITY=localStorage.getItem("bolao_identity")||null;
 let DIRTY=false, ENTRY_LOCK=false;
 
 const $=(s,el=document)=>el.querySelector(s);
@@ -613,22 +613,42 @@ function koWinner(teams,pick){
   if(+pick.a>+pick.h) return teams[1];
   return pick.adv==="home"?teams[0]:(pick.adv==="away"?teams[1]:null);
 }
-// Foto do chaveamento AGORA: usa os confrontos REAIS do worker (times definidos a
-// cada jogo) e cai na projeção pela classificação só nos 16-avos quando o worker
-// ainda não trouxe o confronto. Conforme os jogos terminam, o worker já preenche
-// os times da fase seguinte (ex.: vencedor do 73 vira mandante do 90), então aqui
-// basta espelhar m.home/m.away — o avanço propaga sozinho.
+// Foto do chaveamento AGORA: prioriza o confronto REAL do worker (times já
+// definidos oficialmente para aquele jogo); quando a API ainda não preencheu
+// um dos lados (ex.: só um dos dois jogos anteriores terminou), calculamos o
+// vencedor real nós mesmos a partir do placar do jogo que já acabou — assim o
+// time não fica escondido esperando a API atualizar o confronto completo.
 function koResolveProjection(){
-  const M={...koSeeds()};                         // R32 projetado (fallback)
+  const M={...koSeeds()};                         // R32 projetado (fallback por classificação)
   const cr=crestMap();
   const side=(name,crest)=> name!=null?{name,crest:crest||cr[name]||""}:null;
-  for(let mid=73; mid<=104; mid++){
-    const m=MATCHES.find(x=>+x.id===mid);
-    if(!m){ if(mid>=89) M[mid]=[null,null]; continue; }
+  const byMid={};
+  for(const m of MATCHES){ const id=+m.id; if(id>=73&&id<=104) byMid[id]=m; }
+  for(let mid=73; mid<=88; mid++){
+    const m=byMid[mid]; if(!m) continue;
     const a=side(m.home,m.homeCrest), b=side(m.away,m.awayCrest);
     if(a||b) M[mid]=[a,b];                         // confronto real já definido
-    else if(mid>=89) M[mid]=[null,null];           // oitavas+ ainda a definir
   }
+  // Vencedor/perdedor real de um confronto já resolvido em M, pelo placar oficial do worker.
+  const outcomeOf=(feedMid)=>{
+    const teams=M[feedMid], m=byMid[feedMid];
+    if(!teams||!teams[0]||!teams[1]||!m) return {win:null,lose:null};
+    const adv=koActualAdvancer(m);
+    if(!adv) return {win:null,lose:null};
+    return adv==="home"?{win:teams[0],lose:teams[1]}:{win:teams[1],lose:teams[0]};
+  };
+  for(const mid of [89,90,91,92,93,94,95,96,97,98,99,100,101,102,104]){
+    const f=KO_FEED[mid], m=byMid[mid];
+    let a=m?side(m.home,m.homeCrest):null, b=m?side(m.away,m.awayCrest):null;
+    if(!a) a=outcomeOf(f[0]).win;
+    if(!b) b=outcomeOf(f[1]).win;
+    M[mid]=(a||b)?[a,b]:[null,null];
+  }
+  const m103=byMid[103];
+  let l0=m103?side(m103.home,m103.homeCrest):null, l1=m103?side(m103.away,m103.awayCrest):null;
+  if(!l0) l0=outcomeOf(101).lose;
+  if(!l1) l1=outcomeOf(102).lose;
+  M[103]=(l0||l1)?[l0,l1]:[null,null];
   return M;
 }
 // Bracket pessoal: o vencedor que a pessoa previu avança pra próxima fase.
@@ -652,21 +672,32 @@ const KO_BRACKET_COLS=[
   {label:"Semis",   ids:[101,102], childN:4},
   {label:"Final",   ids:[104], childN:2}
 ];
-const KO_H=1320;   // altura base (px) da área de jogos, p/ alinhar as fases (mais alto = menos "wide")
+const KO_H=1460;   // altura base (px) da área de jogos, p/ alinhar as fases (mais alto = menos "wide")
 let MEUS_OPEN={grupos:false, mata:false};
 let koZoom=1, koPanX=12, koPanY=12, koViewInit=false;
 function koCell(teams, cellClass, mid){
   const m = mid!=null ? MATCHES.find(x=>+x.id===+mid) : null;
   const fin = !!(m && m.status==="FINISHED" && m.homeScore!=null && m.awayScore!=null);
-  const adv = fin ? koActualAdvancer(m) : null;   // "home" | "away" | null
-  const slot=(t,which)=> t?`<div class="kb-team${adv===which?' kb-win':''}"><img src="${esc(t.crest||'')}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span></div>`:`<div class="kb-team tbd">A definir</div>`;
-  const cls=typeof cellClass==='string'?cellClass:(cellClass?'kb-hasright':'');
+  const live = !!(m && m.status==="IN_PLAY" && m.homeScore!=null && m.awayScore!=null);
+  const scored = fin||live;                       // placar exibido: encerrado OU ao vivo
+  const adv = scored ? koActualAdvancer(m) : null; // "home" | "away" | null (ao vivo segue o placar atual)
+  const sc=(which)=> which==='home'?m.homeScore:m.awayScore;
+  const slot=(t,which)=> t?`<div class="kb-team${adv===which?' kb-win':''}"><img src="${esc(t.crest||'')}" alt="" onerror="this.style.visibility='hidden'"><span>${esc(t.name)}</span>${scored?`<b class="kb-score">${esc(sc(which))}</b>`:''}</div>`:`<div class="kb-team tbd">A definir</div>`;
+  const cls=(typeof cellClass==='string'?cellClass:(cellClass?'kb-hasright':''))+(live?' kb-live':'');
   return `<div class="kb-cell${cls?' '+cls:''}">${slot(teams[0],'home')}${slot(teams[1],'away')}</div>`;
 }
 function koMountPanZoom(stage,inner){
   let z=koZoom, ox=koPanX, oy=koPanY;
   const clamp=(v)=>Math.max(0.2,Math.min(3,v));
-  const apply=()=>{ inner.style.transform=`translate(${ox}px,${oy}px) scale(${z})`; koZoom=z; koPanX=ox; koPanY=oy; };
+  const PAN_MARGIN=60;   // folga alem da borda estrita, p/ o arrasto nao ficar "duro"
+  const clampPan=(nx,ny,zz)=>{
+    const sw=stage.clientWidth||360, sh=stage.clientHeight||560;
+    const bw=(inner.scrollWidth||910)*zz, bh=(inner.scrollHeight||600)*zz;
+    const minX=Math.min(0,sw-bw)-PAN_MARGIN, maxX=Math.max(0,sw-bw)+PAN_MARGIN;
+    const minY=Math.min(0,sh-bh)-PAN_MARGIN, maxY=Math.max(0,sh-bh)+PAN_MARGIN;
+    return { x: Math.max(minX,Math.min(maxX,nx)), y: Math.max(minY,Math.min(maxY,ny)) };
+  };
+  const apply=()=>{ const c=clampPan(ox,oy,z); ox=c.x; oy=c.y; inner.style.transform=`translate(${ox}px,${oy}px) scale(${z})`; koZoom=z; koPanX=ox; koPanY=oy; };
   if(!koViewInit){ const sw=stage.clientWidth||360, bw=inner.scrollWidth||910; z=clamp(Math.min(1,(sw-24)/bw)); ox=12; oy=12; koViewInit=true; }
   apply();
   const zoomAt=(nz,mx,my)=>{ nz=clamp(nz); ox=mx-(mx-ox)*(nz/z); oy=my-(my-oy)*(nz/z); z=nz; apply(); };
@@ -719,15 +750,17 @@ async function renderMataMata(){
   const finalHtml=`<div class="kb-col kb-final-col">
     <div class="kb-head">Final</div>
     <div class="kb-cells"><div class="kb-slot">${koCell(M[104],'kb-hasleft kb-hasright',104)}</div></div>
+    <div class="kb-head kb-third-head">3º Lugar</div>
+    <div class="kb-cells kb-third-cells"><div class="kb-slot">${koCell(M[103],'',103)}</div></div>
   </div>`;
-  const bracket=`<div class="kb-bracket-two" style="height:${KO_H+26}px">
+  const bracket=`<div class="kb-bracket-two">
     <div class="kb-half">${leftHtml}</div>
     ${finalHtml}
     <div class="kb-half kb-half-r">${rightHtml}</div>
   </div>`;
   $("#content").innerHTML=`
+    <div class="kb-ctrls"><button class="btn small" id="koZout" aria-label="Diminuir zoom">−</button><button class="btn small" id="koZfit">Ajustar</button><button class="btn small" id="koZin" aria-label="Aumentar zoom">+</button></div>
     <div class="kb-wrap">
-      <div class="kb-ctrls"><button class="btn small" id="koZout" aria-label="Diminuir zoom">−</button><button class="btn small" id="koZfit">Ajustar</button><button class="btn small" id="koZin" aria-label="Aumentar zoom">+</button></div>
       <div class="kb-stage" id="koStage"><div id="koBracket" style="transform-origin:0 0">${bracket}</div></div>
     </div>`;
   koMountPanZoom($("#koStage"), $("#koBracket"));
@@ -897,10 +930,7 @@ function renderKoRanking(){
   if(!R32T) return ensureR32(renderKoRanking);
   if(!PROFILES.length){ $("#content").innerHTML=`<div class="empty">Nenhum palpiteiro cadastrado.</div>`; return; }
   const rk=koRanking();
-  const hasScores=rk.some(e=>e.pts!==null);
-  const note=hasScores
-    ?`<div class="ko-note">Ranking do mata-mata. <b>16-avos:</b> placar exato=5, vencedor=2,5, empate 90min=3, classificado=+5. Demais fases (acertar quem passa): oitavas=10, quartas=20, semi=40, 3º lugar=60, final=80.</div>`
-    :`<div class="ko-note">Os jogos do mata-mata ainda não começaram. <b>16-avos:</b> placar exato=5, vencedor=2,5, empate 90min=3, classificado=+5. Demais fases (acertar quem passa): oitavas=10, quartas=20, semi=40, 3º lugar=60, final=80. Por enquanto mostra campeão cravado e palpites feitos.</div>`;
+  const note="";
   const rows=rk.map((e,i)=>{
     const mine=me()&&me().id===e.prof.id;
     const cls=(i===0?"r1":i===1?"r2":i===2?"r3":"")+(mine?" me":"");
@@ -922,7 +952,7 @@ function koFixtureCard(mid, teams){
   const fin=!!(m&&m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null);
   const live=!!(m&&m.status==="IN_PLAY"&&m.homeScore!=null);
   const show=fin||live;
-  const adv=fin?koActualAdvancer(m):null;                  // "home" | "away" | null
+  const adv=(fin||live)?koActualAdvancer(m):null;           // "home" | "away" | null (ao vivo segue o placar atual)
   const hasPen=fin && m.penHome!=null && m.penAway!=null;   // placar de penaltis (se o worker enviar)
   const tn=(t)=> t?`<span class="tn">${esc(t.name)}</span>`:`<span class="tn" style="color:var(--muted);font-weight:600">A definir</span>`;
   const fl=(t)=> `<img src="${esc((t&&t.crest)||'')}" alt="" style="${t&&t.crest?'':'visibility:hidden'}" onerror="this.style.visibility='hidden'">`;
@@ -932,19 +962,22 @@ function koFixtureCard(mid, teams){
     : `<span class="status">${m?esc(kickoff(m)):"A jogar"}</span>`;
   const homeCls = adv==='home'?' ko-win':(adv==='away'?' ko-lose':'');
   const awayCls = adv==='away'?' ko-win':(adv==='home'?' ko-lose':'');
-  const trophy = `<span class="ko-trophy" title="Classificado">🏆</span>`;
-  const penLine = hasPen?`<div class="ko-pen-score">${m.penHome} <span class="ko-pen-x">–</span> ${m.penAway}</div>`:"";
+  const homeNumCls = adv==='home'?' ko-win-num':(adv==='away'?' ko-lose-num':'');
+  const awayNumCls = adv==='away'?' ko-win-num':(adv==='home'?' ko-lose-num':'');
+  const homePenCls = adv==='home'?' ko-pen-win':(adv==='away'?' ko-pen-lose':'');
+  const awayPenCls = adv==='away'?' ko-pen-win':(adv==='home'?' ko-pen-lose':'');
+  const penLine = hasPen?`<div class="ko-pen-score"><span class="${homePenCls.trim()}">${m.penHome}</span><span class="ko-pen-x">–</span><span class="${awayPenCls.trim()}">${m.penAway}</span></div>`:"";
   const phaseLbl = KO_PHASE_LABEL[koPhaseFor(mid)] || `Jogo ${mid}`;
-  return `<div class="match ko-match${fin?' fin':''}" data-id="${mid}" style="cursor:pointer">
+  return `<div class="match ko-match${fin?' fin':''}${hasPen?' has-pen':''}" data-id="${mid}" style="cursor:pointer">
     <div class="top"><span class="g">${esc(phaseLbl)}</span>${badge}</div>
     <div class="scoreline">
-      <div class="team home${homeCls}">${fl(a)}${tn(a)}${adv==='home'?trophy:''}</div>
-      <div class="ko-center"><div class="ko-nums"><span class="bignum">${show?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum">${show?m.awayScore:"–"}</span></div>${penLine}</div>
-      <div class="team away${awayCls}">${adv==='away'?trophy:''}${tn(b)}${fl(b)}</div>
+      <div class="team home${homeCls}">${fl(a)}${tn(a)}</div>
+      <div class="ko-center"><div class="ko-nums"><span class="bignum${homeNumCls}">${show?m.homeScore:"–"}</span><span class="vs">×</span><span class="bignum${awayNumCls}">${show?m.awayScore:"–"}</span></div>${penLine}</div>
+      <div class="team away${awayCls}">${tn(b)}${fl(b)}</div>
     </div>
   </div>`;
 }
-let KO_CUR=false;   // filtro "Jogo atual" na aba Partidas do mata-mata
+let KO_CUR=true;    // filtro "Jogo atual" na aba Partidas do mata-mata — ligado por padrão
 // Jogo do mata-mata "atual": o que esta AO VIVO; senao o proximo a acontecer (nao finalizado).
 function currentKoMatch(){
   const cand=MATCHES.filter(m=>koPhaseFor(m.id)&&m.status!=="FINISHED");
@@ -980,8 +1013,7 @@ function renderKoPartidas(){
     curHtml=`<div class="cur-card${liveC?' live':''}"><div class="cur-head${liveC?' live':''}">${head}</div>${koFixtureCard(+cur.id, M[+cur.id])}</div>`;
   }
   const cards=ordered.map(mid=>koFixtureCard(mid, M[mid])).join("");
-  $("#content").innerHTML=`<div class="ko-note">Partidas do mata-mata por fase, em ordem de data e hora.</div>
-    <div class="filters">${chips}</div>
+  $("#content").innerHTML=`<div class="filters">${chips}</div>
     ${curChip}${curHtml}
     <div class="roundhead" style="margin-top:8px">${esc(label)}</div>${cards}`;
   $$(".chip[data-ph]").forEach(c=>c.onclick=()=>{ KO_PHASE_AUTO=false; KO_PHASE=+c.dataset.ph; renderKoPartidas(); });
