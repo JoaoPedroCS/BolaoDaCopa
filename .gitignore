@@ -1,4 +1,7 @@
 node_modules/
 worker.js
-predictions.json
 
+# Estado AO VIVO do site — não versionar (a fonte real é o JsonBin).
+# Evita que um commit sobrescreva os palpites atuais com uma cópia velha.
+predictions.json
+data/predictions.json

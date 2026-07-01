@@ -855,11 +855,14 @@ function koActualAdvancer(m){
   const ah=+m.homeScore,aa=+m.awayScore;
   if(ah>aa) return "home"; if(aa>ah) return "away"; return m.koWinner||null;
 }
+// Pontua o mata-mata contando jogos ENCERRADOS e tambem os EM ANDAMENTO (parcial
+// ao vivo entra no ranking, igual aos grupos). Num jogo ao vivo o "classificado"
+// segue o placar atual; empate ao vivo nao dá o bonus de classificacao ainda.
 function scoreKnockout(prof){
   const ko=prof.ko||{}; let total=0,played=0;
   for(const m of MATCHES){
     const phase=koPhaseFor(m.id); if(!phase) continue;
-    if(m.status!=="FINISHED"||m.homeScore==null||m.awayScore==null) continue;
+    if((m.status!=="FINISHED"&&m.status!=="IN_PLAY")||m.homeScore==null||m.awayScore==null) continue;
     const pick=ko[m.id]; const adv=koActualAdvancer(m);
     if(phase==="r32"){
       if(!pick||pick.h==null||pick.a==null) continue;
@@ -997,16 +1000,17 @@ function openKoMatch(mid){
   const fin=!!(m&&m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null);
   const live=!!(m&&m.status==="IN_PLAY"&&m.homeScore!=null);
   const show=fin||live;
-  const advReal=fin?koActualAdvancer(m):null;
+  const scored=fin||live;                         // jogo encerrado OU ao vivo pontua
+  const advReal=scored?koActualAdvancer(m):null;  // ao vivo: segue o placar atual
   const nmeId=me()&&me().id;
 
   let rows=PROFILES.map(p=>{
     const pk=(p.ko&&typeof p.ko[mid]==="object")?p.ko[mid]:null;
     const hasScore=isR32 && pk && pk.h!=null && pk.a!=null;
     const hasAdv=!!(pk && (pk.adv!=null || hasScore));
-    // Pontos do palpiteiro NESTE jogo (so quando o jogo terminou).
+    // Pontos do palpiteiro NESTE jogo (encerrado = oficial; ao vivo = parcial).
     let pts=null, sp=0, qp=0;
-    if(fin && pk){
+    if(scored && pk){
       const predAdv=koPickedAdvancer(pk);
       if(isR32 && hasScore){
         sp=pointsForKo90(+pk.h,+pk.a,+m.homeScore,+m.awayScore);
@@ -1038,7 +1042,7 @@ function openKoMatch(mid){
   // Jogo encerrado: ranking PRIMARIO por PONTOS (desc). Empate em pontos -> da maior
   // vitoria do mandante ate a maior derrota. Jogo nao encerrado: so o placar palpitado.
   rows.sort((a,b)=>{
-    if(fin){
+    if(scored){
       const pa=a.pts==null?-Infinity:a.pts, pb=b.pts==null?-Infinity:b.pts;
       if(pb!==pa) return pb-pa;
     }
@@ -1054,13 +1058,19 @@ function openKoMatch(mid){
     } else if(r.hasAdv && r.pk.adv){
       pickTxt=`→ ${r.pk.adv==='home'?esc(A?A.name:'?'):esc(B?B.name:'?')}`;
     }
+    const star=live?'*':'';   // ao vivo = parcial
     let tag=`<span class="ptag pending">··</span>`;
-    if(fin && r.pk && r.pts!=null){
+    if(scored && r.pk && r.pts!=null){
       if(isR32 && r.hasScore){
         const cls=r.pts===0?"p0":r.sp===5?"p5":r.sp===3?"p3":"p25";
-        tag=`<span class="ptag ${cls}">${fmtPts(r.pts)} pts${r.qp>0?` +${r.qp}Q`:""}</span>`;
+        // Mostra a conta somando (placar + classificado) pra ficar claro que o total
+        // ja inclui o bonus — em vez de "10 pts +5Q", que parecia somar de novo.
+        const breakdown = r.qp>0
+          ? `${fmtPts(r.sp)} <span class="pt-plus">+</span> ${fmtPts(r.qp)} <span class="pt-plus">=</span> `
+          : "";
+        tag=`<span class="ptag ${cls}${live?' parcial':''}" title="placar ${fmtPts(r.sp)} + classificado ${fmtPts(r.qp)}">${breakdown}${fmtPts(r.pts)} pts${star}</span>`;
       } else if(phase&&phase!=="r32"){
-        tag=`<span class="ptag ${r.pts>0?'p5':'p0'}">${r.pts} pts</span>`;
+        tag=`<span class="ptag ${r.pts>0?'p5':'p0'}${live?' parcial':''}">${fmtPts(r.pts)} pts${star}</span>`;
       }
     }
     return `<div class="pick-line${mine?' me':''}">
@@ -1075,8 +1085,11 @@ function openKoMatch(mid){
   const hasPen=fin && m.penHome!=null && m.penAway!=null;
   const penNote=hasPen?`<div style="text-align:center;font-size:13px;font-weight:600;color:var(--muted);margin:-6px 0 14px"><b style="color:var(--chalk)">${m.penHome}</b> – <b style="color:var(--chalk)">${m.penAway}</b></div>`:"";
   const note = (fin||live)?'' : (m?`<p style="color:var(--muted);margin-bottom:14px;font-size:14px;font-weight:600">${esc(kickoff(m))}</p>`:'');
+  const brkNote = isR32 ? ' Nos 16-avos o total é <b>placar + classificado</b> (ex.: 5 + 5 = 10 pts).' : '';
   const ptsInfo = fin
-    ? '<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Ordenado por pontos; em caso de empate, da maior vitória do mandante até a maior derrota.</p>'
+    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Ordenado por pontos; em caso de empate, da maior vitória do mandante até a maior derrota.${brkNote}</p>`
+    : live
+    ? `<p style="font-size:12px;color:var(--live);margin:0 0 14px;font-weight:600">Pontuação parcial ao vivo (marcada com *) — já entra no ranking e muda conforme o jogo.${brkNote}</p>`
     : isR32
     ? '<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Ordenado da maior vitória do mandante até a maior derrota; empates em ordem alfabética.</p>'
     : '<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Quem cada um cravou para avançar.</p>';
@@ -1116,27 +1129,30 @@ function openKoProfile(id){
       const pk=(typeof ko[mid]==="object")?ko[mid]:null;
       const m=MATCHES.find(x=>+x.id===mid);
       const fin=!!(m&&m.status==="FINISHED"&&m.homeScore!=null&&m.awayScore!=null);
+      const live=!!(m&&m.status==="IN_PLAY"&&m.homeScore!=null&&m.awayScore!=null);
+      const scored=fin||live;
       let sc="—";
       if(KO_R32_IDS.has(mid)){
         if(pk&&pk.h!=null&&pk.a!=null){ sc=`${pk.h} – ${pk.a}`; if(+pk.h===+pk.a&&pk.adv) sc+=` <span style="color:var(--muted)">(pen: ${pk.adv==='home'?esc(A.name):esc(B.name)})</span>`; }
       } else {
         if(pk&&pk.adv) sc=`→ ${pk.adv==='home'?esc(A.name):esc(B.name)}`;
       }
-      let ptTag="";
-      if(fin&&pk){
+      let ptTag=""; const star=live?'*':'';
+      if(scored&&pk){
         const phase=koPhaseFor(mid); const adv=koActualAdvancer(m); const predAdv=koPickedAdvancer(pk);
         if(phase==="r32"&&pk.h!=null&&pk.a!=null){
           const sp=pointsForKo90(+pk.h,+pk.a,+m.homeScore,+m.awayScore);
           const qp=(adv&&predAdv===adv)?KO_QUAL_PTS.r32:0;
           const tot=sp+qp; const cls=tot===0?"p0":sp===5?"p5":sp===3?"p3":"p25";
-          ptTag=`<span class="ptag ${cls}">${fmtPts(tot)} pts${qp>0?` +${qp}Q`:""}</span>`;
+          const breakdown = qp>0 ? `${fmtPts(sp)} <span class="pt-plus">+</span> ${fmtPts(qp)} <span class="pt-plus">=</span> ` : "";
+          ptTag=`<span class="ptag ${cls}${live?' parcial':''}" title="placar ${fmtPts(sp)} + classificado ${fmtPts(qp)}">${breakdown}${fmtPts(tot)} pts${star}</span>`;
         } else if(phase&&phase!=="r32"&&predAdv){
           const pts=(adv&&predAdv===adv)?KO_QUAL_PTS[phase]:0;
-          ptTag=`<span class="ptag ${pts>0?'p5':'p0'}">${pts} pts</span>`;
+          ptTag=`<span class="ptag ${pts>0?'p5':'p0'}${live?' parcial':''}">${fmtPts(pts)} pts${star}</span>`;
         }
       }
       return `<div class="pick-line"><div class="pl-who"><span class="nm" style="font-size:14px">${esc(A.name)} <span class="vs">×</span> ${esc(B.name)}</span></div>
-        <div class="pl-right"><span class="pscore${pk?'':' none'}">${sc}</span>${fin?`<span style="font-size:12px;color:var(--muted);margin:0 4px">${m.homeScore}–${m.awayScore}</span>`:""}${ptTag}</div></div>`;
+        <div class="pl-right"><span class="pscore${pk?'':' none'}">${sc}</span>${scored?`<span style="font-size:12px;color:var(--muted);margin:0 4px">${m.homeScore}–${m.awayScore}</span>`:""}${ptTag}</div></div>`;
     }).filter(Boolean).join("");
     return rows?`<div class="ke-round">${label}</div>${rows}`:"";
   }).join("") || `<div class="empty">Sem palpites de mata-mata ainda.</div>`;
