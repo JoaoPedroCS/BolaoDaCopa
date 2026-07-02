@@ -859,6 +859,23 @@ function ensureR32(cb){
 const KO_R32_IDS=new Set([73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88]);
 const KO_QUAL_PTS={r32:5,r16:10,qf:20,sf:40,third:60,final:80};
 const KO_PHASE_LABEL={r32:"16-avos de final",r16:"Oitavas de final",qf:"Quartas de final",sf:"Semifinal",third:"Disputa de 3º lugar",final:"Final"};
+// Escala de cor (vermelho -> amarelo -> verde) usada nos pontos de cada jogo,
+// proporcional ao quanto do maximo possivel naquele jogo foi conquistado.
+const hexToRgb=(hex)=>{ const n=parseInt(hex.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; };
+const rgbToHex=(r,g,b)=>'#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const mixHex=(hex1,hex2,t)=>{
+  const [r1,g1,b1]=hexToRgb(hex1), [r2,g2,b2]=hexToRgb(hex2);
+  return rgbToHex(r1+(r2-r1)*t, g1+(g2-g1)*t, b1+(b2-b1)*t);
+};
+const shadeHex=(hex,amt)=>{ const [r,g,b]=hexToRgb(hex); return rgbToHex(r*(1+amt),g*(1+amt),b*(1+amt)); };
+const PTS_SCALE_RED=shadeHex('#F0566A',-0.25);      // vermelho usado, um pouco mais escuro
+const PTS_SCALE_YELLOW='#E0A410';                    // amarelo usado
+const PTS_SCALE_GREEN=shadeHex('#1FB463',-0.2);      // verde usado, um pouco mais escuro
+function ptsScaleColor(pts,maxPts){
+  if(!maxPts||maxPts<=0) return PTS_SCALE_RED;
+  const t=Math.max(0,Math.min(1,pts/maxPts));
+  return t<0.5 ? mixHex(PTS_SCALE_RED,PTS_SCALE_YELLOW,t/0.5) : mixHex(PTS_SCALE_YELLOW,PTS_SCALE_GREEN,(t-0.5)/0.5);
+}
 function koPhaseFor(mid){
   const id=+mid;
   if(KO_R32_IDS.has(id)) return "r32";
@@ -945,6 +962,27 @@ function scoreKnockout(prof){
   }
   return played>0?total:null;
 }
+// Conta, entre os jogos do mata-mata ja decididos, quantos o palpiteiro acertou o
+// classificado e quantos errou — usado nas bolinhas do ranking.
+function koHitsMisses(prof){
+  const ko=prof.ko||{}; let hits=0, misses=0;
+  const Mpred=koResolvePicks(ko), Mreal=koResolveProjection();
+  for(const m of MATCHES){
+    const phase=koPhaseFor(m.id); if(!phase) continue;
+    if((m.status!=="FINISHED"&&m.status!=="IN_PLAY")||m.homeScore==null||m.awayScore==null) continue;
+    const pick=ko[m.id]; const adv=koActualAdvancer(m); if(!adv) continue;
+    if(phase==="r32"){
+      if(!pick||pick.h==null||pick.a==null) continue;
+      koPickedAdvancer(pick)===adv ? hits++ : misses++;
+    } else {
+      const predAdv=koPickedAdvancer(pick); if(!predAdv) continue;
+      const predTeam=koSideName(Mpred[m.id],predAdv);
+      const realTeam=koSideName(Mreal[m.id],adv);
+      (predTeam&&realTeam&&predTeam===realTeam) ? hits++ : misses++;
+    }
+  }
+  return {hits, misses};
+}
 function koStatsFor(prof){
   const ko=prof.ko||{};
   let picks=0;
@@ -953,7 +991,7 @@ function koStatsFor(prof){
     if(KO_R32_IDS.has(mid)){if(pk.h!=null&&pk.a!=null) picks++;} else {if(pk.adv) picks++;}
   }
   const M=koResolvePicks(ko), ch=koWinner(M[104], ko[104]);
-  return { picks, champ: ch?ch.name:null, pts: scoreKnockout(prof) };
+  return { picks, champ: ch?ch.name:null, pts: scoreKnockout(prof), ...koHitsMisses(prof) };
 }
 function koRanking(){
   return PROFILES.map(p=>({prof:p, ...koStatsFor(p)}))
@@ -973,7 +1011,10 @@ function renderKoRanking(){
     return `<div class="row ${cls}">
       <div class="rank">${i+1}</div>
       <div class="who">${avatar(e.prof)}<div style="min-width:0"><div class="nm">${esc(e.prof.name)}${mine?'<span class="youtag">Você</span>':''}</div>
-        <div class="badge-row">${champ}<span style="font-size:13px;color:var(--muted);margin-left:4px">${e.picks} palpites</span></div></div></div>
+        <div class="badge-row" aria-label="Classificados certos: ${e.hits}, errados: ${e.misses}">${champ}
+          ${e.hits>0?`<span class="score-badge sb-5" title="Classificados certos">${e.hits}</span>`:''}
+          ${e.misses>0?`<span class="score-badge sb-0" title="Errou o palpite">${e.misses}</span>`:''}
+          <span style="font-size:13px;color:var(--muted);margin-left:4px">${e.picks} palpites</span></div></div></div>
       <div class="pts">${e.pts==null?'—':fmtPts(e.pts)}<small>${e.pts==null?'a definir':'pontos'}</small></div>
     </div>`;
   }).join("");
@@ -1140,15 +1181,18 @@ function openKoMatch(mid){
     let tag=`<span class="ptag pending">··</span>`;
     if(scored && r.pk && r.pts!=null){
       if(isR32 && r.hasScore){
-        const cls=r.pts===0?"p0":r.sp===5?"p5":r.sp===3?"p3":"p25";
+        // Cor em escala do maximo possivel neste jogo (placar + classificado) ate 0.
+        const maxPts=5+KO_QUAL_PTS.r32;
+        const bg=ptsScaleColor(r.pts,maxPts);
         // Mostra a conta somando (placar + classificado) pra ficar claro que o total
         // ja inclui o bonus — em vez de "10 pts +5Q", que parecia somar de novo.
         const breakdown = r.qp>0
           ? `${fmtPts(r.sp)} <span class="pt-plus">+</span> ${fmtPts(r.qp)} <span class="pt-plus">=</span> `
           : "";
-        tag=`<span class="ptag ${cls}${live?' parcial':''}" title="placar ${fmtPts(r.sp)} + classificado ${fmtPts(r.qp)}">${breakdown}${fmtPts(r.pts)} pts${star}</span>`;
+        tag=`<span class="ptag${live?' parcial':''}" style="background:${bg}" title="placar ${fmtPts(r.sp)} + classificado ${fmtPts(r.qp)}">${breakdown}${fmtPts(r.pts)} pts${star}</span>`;
       } else if(phase&&phase!=="r32"){
-        tag=`<span class="ptag ${r.pts>0?'p5':'p0'}${live?' parcial':''}">${fmtPts(r.pts)} pts${star}</span>`;
+        const bg=ptsScaleColor(r.pts,KO_QUAL_PTS[phase]);
+        tag=`<span class="ptag${live?' parcial':''}" style="background:${bg}">${fmtPts(r.pts)} pts${star}</span>`;
       }
     }
     return `<div class="pick-line${mine?' me':''}">
@@ -1164,7 +1208,7 @@ function openKoMatch(mid){
   const note = (fin||live)?'' : (m?`<p style="color:var(--muted);margin-bottom:14px;font-size:14px;font-weight:600">${esc(kickoff(m))}</p>`:'');
   const brkNote = isR32 ? ' Nos 16-avos o total é <b>placar + classificado</b> (ex.: 5 + 5 = 10 pts).' : '';
   const ptsInfo = fin
-    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 14px">Ordenado por pontos; em caso de empate, da maior vitória do mandante até a maior derrota.${brkNote}</p>`
+    ? ''
     : live
     ? `<p style="font-size:12px;color:var(--live);margin:0 0 14px;font-weight:600">Pontuação parcial ao vivo (marcada com *) — já entra no ranking e muda conforme o jogo.${brkNote}</p>`
     : isR32
@@ -1221,15 +1265,16 @@ function openKoProfile(id){
           const r90=koReg90(m);
           const sp=pointsForKo90(+pk.h,+pk.a,r90.h,r90.a);
           const qp=(adv&&predAdv===adv)?KO_QUAL_PTS.r32:0;
-          const tot=sp+qp; const cls=tot===0?"p0":sp===5?"p5":sp===3?"p3":"p25";
+          const tot=sp+qp; const bg=ptsScaleColor(tot,5+KO_QUAL_PTS.r32);
           const breakdown = qp>0 ? `${fmtPts(sp)} <span class="pt-plus">+</span> ${fmtPts(qp)} <span class="pt-plus">=</span> ` : "";
-          ptTag=`<span class="ptag ${cls}${live?' parcial':''}" title="placar ${fmtPts(sp)} + classificado ${fmtPts(qp)}">${breakdown}${fmtPts(tot)} pts${star}</span>`;
+          ptTag=`<span class="ptag${live?' parcial':''}" style="background:${bg}" title="placar ${fmtPts(sp)} + classificado ${fmtPts(qp)}">${breakdown}${fmtPts(tot)} pts${star}</span>`;
         } else if(phase&&phase!=="r32"&&predAdv){
           // A/B são os times PREVISTOS pelo perfil; só pontua se cravou o time real.
           const predTeam=predAdv==='home'?A.name:B.name;
           const realTeam=koSideName(koResolveProjection()[mid],adv);
           const pts=(adv&&realTeam&&predTeam===realTeam)?KO_QUAL_PTS[phase]:0;
-          ptTag=`<span class="ptag ${pts>0?'p5':'p0'}${live?' parcial':''}">${fmtPts(pts)} pts${star}</span>`;
+          const bg=ptsScaleColor(pts,KO_QUAL_PTS[phase]);
+          ptTag=`<span class="ptag${live?' parcial':''}" style="background:${bg}">${fmtPts(pts)} pts${star}</span>`;
         }
       }
       return `<div class="pick-line"><div class="pl-who"><span class="nm" style="font-size:14px">${esc(A.name)} <span class="vs">×</span> ${esc(B.name)}</span></div>

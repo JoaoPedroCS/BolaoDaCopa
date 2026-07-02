@@ -157,6 +157,8 @@
   .sb-3 { background: var(--p3); }
   .sb-25 { background: var(--p25); }
   .sb-0 { background: var(--p0); }
+  .sb-bonus { background: var(--signal); color: var(--signal-deep); min-width: 34px; }
+  .legend-num { font-weight: 800; font-size: 15px; margin-right: 2px; }
 
   /* ===== Ranking ===== */
   .board { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); box-shadow: var(--shadow-card); }
@@ -357,7 +359,9 @@
   /* ===== Rodapé / legenda ===== */
   footer { margin-top: 30px; background: var(--panel); padding: 22px; border-radius: var(--radius); border: 1px solid var(--line); box-shadow: var(--shadow-card); }
   footer .legend-title { font-family: var(--font-display); font-weight: 400; letter-spacing: 1px; text-transform: uppercase; font-size: 24px; margin-bottom: 14px; text-align: center; color: var(--chalk); }
+  footer .legend-subtitle { font-weight: 800; letter-spacing: .5px; text-transform: uppercase; font-size: 12.5px; margin: 0 0 12px; text-align: center; color: var(--muted); }
   footer .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  footer .legend-grid + .legend-subtitle { margin-top: 22px; }
   footer .legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--muted); padding: 11px 13px; background: var(--panel-2); border-radius: 12px; border: 1px solid var(--line-soft); }
 
   /* ===== Tabela de classificação ===== */
