@@ -242,6 +242,7 @@ async function loadMatches(){
     const patch={};
     if(f.penHome==null && m.penHome!=null){ patch.penHome=m.penHome; patch.penAway=m.penAway; }
     if(f.koWinner==null && m.koWinner!=null){ patch.koWinner=m.koWinner; }
+    if(f.regHome==null && m.regHome!=null){ patch.regHome=m.regHome; patch.regAway=m.regAway; }
     return Object.keys(patch).length?{...f,...patch}:f;
   });
   for(const [id,m] of frozen){ if(!merged.some(x=>x.id===id)) merged.push(m); }   // finalizado sumiu do fetch? mantém
@@ -888,11 +889,39 @@ function koActualAdvancer(m){
   const ah=+m.homeScore,aa=+m.awayScore;
   if(ah>aa) return "home"; if(aa>ah) return "away"; return m.koWinner||null;
 }
+// Placar aos 90 MINUTOS, base da pontuação de placar dos 16-avos. O worker manda
+// regHome/regAway só quando houve prorrogação (o 90' difere do total); sem prorrogação
+// o próprio total (homeScore/awayScore) já é o placar dos 90'.
+function koReg90(m){
+  if(!m) return {h:null,a:null};
+  const h=m.regHome!=null?+m.regHome:(m.homeScore==null?null:+m.homeScore);
+  const a=m.regAway!=null?+m.regAway:(m.awayScore==null?null:+m.awayScore);
+  return {h,a};
+}
+// Nome do time no lado (home/away) de um confronto do bracket ([home,away]).
+function koSideName(teams,side){
+  if(!teams||!side) return null;
+  const t=teams[side==='home'?0:1];
+  return t&&t.name?t.name:null;
+}
+// Linha compacta com o placar aos 90', ao fim da prorrogação (se houve) e nos pênaltis
+// (se houve). Aparece no topo do modal do jogo.
+function koScoreBreakdown(m){
+  if(!m||(m.status!=="FINISHED"&&m.status!=="IN_PLAY")||m.homeScore==null||m.awayScore==null) return "";
+  const hadET=m.regHome!=null&&m.regAway!=null;
+  const hasPen=m.penHome!=null&&m.penAway!=null;
+  const reg=hadET?`${m.regHome}–${m.regAway}`:`${m.homeScore}–${m.awayScore}`;
+  const parts=[`90' <b>${esc(reg)}</b>`];
+  if(hadET) parts.push(`Prorrog. <b>${esc(m.homeScore+"–"+m.awayScore)}</b>`);
+  if(hasPen) parts.push(`Pên. <b>${esc(m.penHome+"–"+m.penAway)}</b>`);
+  return `<div class="ko-breakdown">${parts.join(" · ")}</div>`;
+}
 // Pontua o mata-mata contando jogos ENCERRADOS e tambem os EM ANDAMENTO (parcial
 // ao vivo entra no ranking, igual aos grupos). Num jogo ao vivo o "classificado"
 // segue o placar atual; empate ao vivo nao dá o bonus de classificacao ainda.
 function scoreKnockout(prof){
   const ko=prof.ko||{}; let total=0,played=0;
+  const Mpred=koResolvePicks(ko), Mreal=koResolveProjection();
   for(const m of MATCHES){
     const phase=koPhaseFor(m.id); if(!phase) continue;
     if((m.status!=="FINISHED"&&m.status!=="IN_PLAY")||m.homeScore==null||m.awayScore==null) continue;
@@ -900,12 +929,18 @@ function scoreKnockout(prof){
     if(phase==="r32"){
       if(!pick||pick.h==null||pick.a==null) continue;
       played++;
-      total+=pointsForKo90(+pick.h,+pick.a,+m.homeScore,+m.awayScore);
+      const r90=koReg90(m);
+      total+=pointsForKo90(+pick.h,+pick.a,r90.h,r90.a);   // placar: baseado nos 90'
       if(adv&&koPickedAdvancer(pick)===adv) total+=KO_QUAL_PTS.r32;
     } else {
       const predAdv=koPickedAdvancer(pick); if(!predAdv) continue;
       played++;
-      if(adv&&predAdv===adv) total+=KO_QUAL_PTS[phase];
+      // Qualificação só pontua se o palpiteiro cravou o TIME que realmente avançou.
+      // Não basta acertar o "lado" do confronto: o time daquele lado pode ter mudado
+      // (ex.: apostou na Holanda, mas quem chegou nessa vaga foi o Marrocos).
+      const predTeam=koSideName(Mpred[m.id],predAdv);
+      const realTeam=koSideName(Mreal[m.id],adv);
+      if(adv&&predTeam&&realTeam&&predTeam===realTeam) total+=KO_QUAL_PTS[phase];
     }
   }
   return played>0?total:null;
@@ -1036,23 +1071,33 @@ function openKoMatch(mid){
   const advReal=scored?koActualAdvancer(m):null;  // ao vivo: segue o placar atual
   const nmeId=me()&&me().id;
 
+  const r90=koReg90(m);                             // placar dos 90' (base do placar dos 16-avos)
+  const realTeam=koSideName(teams,advReal);         // time que realmente avançou
   let rows=PROFILES.map(p=>{
     const pk=(p.ko&&typeof p.ko[mid]==="object")?p.ko[mid]:null;
     const hasScore=isR32 && pk && pk.h!=null && pk.a!=null;
     const hasAdv=!!(pk && (pk.adv!=null || hasScore));
+    const predAdv=koPickedAdvancer(pk);
+    // Fases além dos 16-avos: o time que ESTE palpiteiro cravou para avançar vem do
+    // bracket dele (koResolvePicks), não do slot real — que pode ter outro time.
+    let predTeamName=null;
+    if(phase&&phase!=="r32"&&predAdv){
+      const Mpk=koResolvePicks(p.ko||{});
+      predTeamName=koSideName(Mpk[mid],predAdv);
+    }
     // Pontos do palpiteiro NESTE jogo (encerrado = oficial; ao vivo = parcial).
     let pts=null, sp=0, qp=0;
     if(scored && pk){
-      const predAdv=koPickedAdvancer(pk);
       if(isR32 && hasScore){
-        sp=pointsForKo90(+pk.h,+pk.a,+m.homeScore,+m.awayScore);
+        sp=pointsForKo90(+pk.h,+pk.a,r90.h,r90.a);
         qp=(advReal&&predAdv===advReal)?KO_QUAL_PTS.r32:0;
         pts=sp+qp;
       } else if(phase&&phase!=="r32"&&predAdv){
-        pts=(advReal&&predAdv===advReal)?KO_QUAL_PTS[phase]:0;
+        // Só pontua quem cravou o TIME que realmente avançou (não o "lado").
+        pts=(advReal&&predTeamName&&realTeam&&predTeamName===realTeam)?KO_QUAL_PTS[phase]:0;
       }
     }
-    return { p, pk, hasScore, hasAdv, pts, sp, qp,
+    return { p, pk, hasScore, hasAdv, pts, sp, qp, predTeamName,
       has: isR32?hasScore:hasAdv,
       sal: hasScore?(+pk.h - +pk.a):0,
       tot: hasScore?(+pk.h + +pk.a):0 };
@@ -1088,7 +1133,8 @@ function openKoMatch(mid){
       pickTxt=`${r.pk.h} – ${r.pk.a}`;
       if(+r.pk.h===+r.pk.a && r.pk.adv) pickTxt+=` <span style="color:var(--muted);font-size:12px">(pên: ${r.pk.adv==='home'?esc(A?A.name:''):esc(B?B.name:'')})</span>`;
     } else if(r.hasAdv && r.pk.adv){
-      pickTxt=`→ ${r.pk.adv==='home'?esc(A?A.name:'?'):esc(B?B.name:'?')}`;
+      // Mostra o time que o palpiteiro cravou (do bracket dele), não o do slot real.
+      pickTxt=`→ ${esc(r.predTeamName || (r.pk.adv==='home'?(A?A.name:'?'):(B?B.name:'?')))}`;
     }
     const star=live?'*':'';   // ao vivo = parcial
     let tag=`<span class="ptag pending">··</span>`;
@@ -1114,8 +1160,7 @@ function openKoMatch(mid){
   const flg=(t)=>`<img src="${esc((t&&t.crest)||'')}" alt="" style="${t&&t.crest?'':'visibility:hidden'}" onerror="this.style.visibility='hidden'">`;
   const lmt=live?liveMinuteText(m):"";
   const stTxt = fin?'Jogo Encerrado':(live?('● Ao vivo'+(lmt?` · ${esc(lmt)}`:'')):'Aguardando início');
-  const hasPen=fin && m.penHome!=null && m.penAway!=null;
-  const penNote=hasPen?`<div style="text-align:center;font-size:13px;font-weight:600;color:var(--muted);margin:-6px 0 14px"><b style="color:var(--chalk)">${m.penHome}</b> – <b style="color:var(--chalk)">${m.penAway}</b></div>`:"";
+  const penNote=koScoreBreakdown(m);   // 90' · prorrogação · pênaltis (compacto)
   const note = (fin||live)?'' : (m?`<p style="color:var(--muted);margin-bottom:14px;font-size:14px;font-weight:600">${esc(kickoff(m))}</p>`:'');
   const brkNote = isR32 ? ' Nos 16-avos o total é <b>placar + classificado</b> (ex.: 5 + 5 = 10 pts).' : '';
   const ptsInfo = fin
@@ -1173,13 +1218,17 @@ function openKoProfile(id){
       if(scored&&pk){
         const phase=koPhaseFor(mid); const adv=koActualAdvancer(m); const predAdv=koPickedAdvancer(pk);
         if(phase==="r32"&&pk.h!=null&&pk.a!=null){
-          const sp=pointsForKo90(+pk.h,+pk.a,+m.homeScore,+m.awayScore);
+          const r90=koReg90(m);
+          const sp=pointsForKo90(+pk.h,+pk.a,r90.h,r90.a);
           const qp=(adv&&predAdv===adv)?KO_QUAL_PTS.r32:0;
           const tot=sp+qp; const cls=tot===0?"p0":sp===5?"p5":sp===3?"p3":"p25";
           const breakdown = qp>0 ? `${fmtPts(sp)} <span class="pt-plus">+</span> ${fmtPts(qp)} <span class="pt-plus">=</span> ` : "";
           ptTag=`<span class="ptag ${cls}${live?' parcial':''}" title="placar ${fmtPts(sp)} + classificado ${fmtPts(qp)}">${breakdown}${fmtPts(tot)} pts${star}</span>`;
         } else if(phase&&phase!=="r32"&&predAdv){
-          const pts=(adv&&predAdv===adv)?KO_QUAL_PTS[phase]:0;
+          // A/B são os times PREVISTOS pelo perfil; só pontua se cravou o time real.
+          const predTeam=predAdv==='home'?A.name:B.name;
+          const realTeam=koSideName(koResolveProjection()[mid],adv);
+          const pts=(adv&&realTeam&&predTeam===realTeam)?KO_QUAL_PTS[phase]:0;
           ptTag=`<span class="ptag ${pts>0?'p5':'p0'}${live?' parcial':''}">${fmtPts(pts)} pts${star}</span>`;
         }
       }

@@ -321,6 +321,8 @@
   .modal .mhead { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
   .modal .mhead .av { width: 66px; height: 66px; }
   .modal-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 20px 0; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .ko-breakdown { text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .3px; margin: -8px 0 14px; font-variant-numeric: tabular-nums; }
+  .ko-breakdown b { color: var(--chalk); font-weight: 800; }
 
   /* ===== Modal de entrada ===== */
   .entry-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 20px 0; }
