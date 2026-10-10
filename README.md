@@ -1,4 +1,4 @@
-# Bolão da Copa 2026 ⚽
+# Bolão da Copa 2026 
 
 Site **estático** (estilo GitHub Pages, sem servidor) para um bolão entre amigos da Copa do
 Mundo 2026. Cada palpiteiro tem um perfil com seus palpites; o site **puxa os placares reais
