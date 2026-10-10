@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-16T02:52:17.258Z",
+  "updatedAt": "2026-10-10T17:40:48.518Z",
   "source": "football-data.org",
   "matches": [
     {
@@ -219,9 +219,9 @@
       "away": "Senegal",
       "homeCrest": "https://crests.football-data.org/773.svg",
       "awayCrest": "https://crests.football-data.org/senegal.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 1
     },
     {
       "id": "wc-050",
@@ -232,9 +232,9 @@
       "away": "Norway",
       "homeCrest": "https://crests.football-data.org/iraq.svg",
       "awayCrest": "https://crests.football-data.org/813.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 4
     },
     {
       "id": "wc-056",
@@ -245,9 +245,9 @@
       "away": "Algeria",
       "homeCrest": "https://crests.football-data.org/762.png",
       "awayCrest": "https://crests.football-data.org/algeria.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 0
     },
     {
       "id": "wc-055",
@@ -258,9 +258,9 @@
       "away": "Jordan",
       "homeCrest": "https://crests.football-data.org/816.svg",
       "awayCrest": "https://crests.football-data.org/8049.png",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 1
     },
     {
       "id": "wc-061",
@@ -271,9 +271,9 @@
       "away": "Congo DR",
       "homeCrest": "https://crests.football-data.org/765.svg",
       "awayCrest": "https://crests.football-data.org/congo_dr.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 1
     },
     {
       "id": "wc-067",
@@ -284,9 +284,9 @@
       "away": "Croatia",
       "homeCrest": "https://crests.football-data.org/770.svg",
       "awayCrest": "https://crests.football-data.org/799.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 4,
+      "awayScore": 2
     },
     {
       "id": "wc-068",
@@ -297,9 +297,9 @@
       "away": "Panama",
       "homeCrest": "https://crests.football-data.org/ghana.svg",
       "awayCrest": "https://crests.football-data.org/panama.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 0
     },
     {
       "id": "wc-062",
@@ -310,9 +310,9 @@
       "away": "Colombia",
       "homeCrest": "https://crests.football-data.org/8070.png",
       "awayCrest": "https://crests.football-data.org/818.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 3
     },
     {
       "id": "wc-003",
@@ -323,9 +323,9 @@
       "away": "South Africa",
       "homeCrest": "https://crests.football-data.org/798.svg",
       "awayCrest": "https://crests.football-data.org/9396.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 1
     },
     {
       "id": "wc-009",
@@ -336,9 +336,9 @@
       "away": "Bosnia-Herzegovina",
       "homeCrest": "https://crests.football-data.org/788.svg",
       "awayCrest": "https://crests.football-data.org/bosnia.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 4,
+      "awayScore": 1
     },
     {
       "id": "wc-010",
@@ -349,9 +349,9 @@
       "away": "Qatar",
       "homeCrest": "https://crests.football-data.org/canada.svg",
       "awayCrest": "https://crests.football-data.org/8030.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 6,
+      "awayScore": 0
     },
     {
       "id": "wc-004",
@@ -362,9 +362,9 @@
       "away": "South Korea",
       "homeCrest": "https://crests.football-data.org/769.svg",
       "awayCrest": "https://crests.football-data.org/772.png",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 0
     },
     {
       "id": "wc-022",
@@ -375,9 +375,9 @@
       "away": "Australia",
       "homeCrest": "https://crests.football-data.org/usa.svg",
       "awayCrest": "https://crests.football-data.org/779.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 0
     },
     {
       "id": "wc-015",
@@ -388,9 +388,9 @@
       "away": "Morocco",
       "homeCrest": "https://crests.football-data.org/814.svg",
       "awayCrest": "https://crests.football-data.org/morocco.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 1
     },
     {
       "id": "wc-016",
@@ -401,9 +401,9 @@
       "away": "Haiti",
       "homeCrest": "https://crests.football-data.org/764.svg",
       "awayCrest": "https://crests.football-data.org/haiti.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 0
     },
     {
       "id": "wc-021",
@@ -414,9 +414,9 @@
       "away": "Paraguay",
       "homeCrest": "https://crests.football-data.org/803.svg",
       "awayCrest": "https://crests.football-data.org/761.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 1
     },
     {
       "id": "wc-034",
@@ -427,9 +427,9 @@
       "away": "Sweden",
       "homeCrest": "https://crests.football-data.org/8601.svg",
       "awayCrest": "https://crests.football-data.org/792.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 5,
+      "awayScore": 1
     },
     {
       "id": "wc-027",
@@ -440,9 +440,9 @@
       "away": "Ivory Coast",
       "homeCrest": "https://crests.football-data.org/759.svg",
       "awayCrest": "https://crests.football-data.org/787.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 1
     },
     {
       "id": "wc-028",
@@ -453,9 +453,9 @@
       "away": "Curaçao",
       "homeCrest": "https://crests.football-data.org/791.svg",
       "awayCrest": "https://crests.football-data.org/curacao.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-033",
@@ -466,9 +466,9 @@
       "away": "Japan",
       "homeCrest": "https://crests.football-data.org/tunisia.svg",
       "awayCrest": "https://crests.football-data.org/766.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 4
     },
     {
       "id": "wc-045",
@@ -479,9 +479,9 @@
       "away": "Saudi Arabia",
       "homeCrest": "https://crests.football-data.org/760.svg",
       "awayCrest": "https://crests.football-data.org/saudi_arabia.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 4,
+      "awayScore": 0
     },
     {
       "id": "wc-039",
@@ -492,9 +492,9 @@
       "away": "Iran",
       "homeCrest": "https://crests.football-data.org/805.svg",
       "awayCrest": "https://crests.football-data.org/iran.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-046",
@@ -505,9 +505,9 @@
       "away": "Cape Verde Islands",
       "homeCrest": "https://crests.football-data.org/758.svg",
       "awayCrest": "https://crests.football-data.org/cape_verde.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 2
     },
     {
       "id": "wc-040",
@@ -518,9 +518,9 @@
       "away": "Egypt",
       "homeCrest": "https://crests.football-data.org/783.svg",
       "awayCrest": "https://crests.football-data.org/825.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 3
     },
     {
       "id": "wc-057",
@@ -531,9 +531,9 @@
       "away": "Austria",
       "homeCrest": "https://crests.football-data.org/762.png",
       "awayCrest": "https://crests.football-data.org/816.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 0
     },
     {
       "id": "wc-051",
@@ -544,9 +544,9 @@
       "away": "Iraq",
       "homeCrest": "https://crests.football-data.org/773.svg",
       "awayCrest": "https://crests.football-data.org/iraq.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 0
     },
     {
       "id": "wc-052",
@@ -557,9 +557,9 @@
       "away": "Senegal",
       "homeCrest": "https://crests.football-data.org/813.svg",
       "awayCrest": "https://crests.football-data.org/senegal.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 2
     },
     {
       "id": "wc-058",
@@ -570,9 +570,9 @@
       "away": "Algeria",
       "homeCrest": "https://crests.football-data.org/8049.png",
       "awayCrest": "https://crests.football-data.org/algeria.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 2
     },
     {
       "id": "wc-063",
@@ -583,9 +583,9 @@
       "away": "Uzbekistan",
       "homeCrest": "https://crests.football-data.org/765.svg",
       "awayCrest": "https://crests.football-data.org/8070.png",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 5,
+      "awayScore": 0
     },
     {
       "id": "wc-069",
@@ -596,9 +596,9 @@
       "away": "Ghana",
       "homeCrest": "https://crests.football-data.org/770.svg",
       "awayCrest": "https://crests.football-data.org/ghana.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-070",
@@ -609,9 +609,9 @@
       "away": "Croatia",
       "homeCrest": "https://crests.football-data.org/panama.svg",
       "awayCrest": "https://crests.football-data.org/799.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 1
     },
     {
       "id": "wc-064",
@@ -622,9 +622,9 @@
       "away": "Congo DR",
       "homeCrest": "https://crests.football-data.org/818.svg",
       "awayCrest": "https://crests.football-data.org/congo_dr.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 0
     },
     {
       "id": "wc-011",
@@ -635,9 +635,9 @@
       "away": "Canada",
       "homeCrest": "https://crests.football-data.org/788.svg",
       "awayCrest": "https://crests.football-data.org/canada.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 1
     },
     {
       "id": "wc-012",
@@ -648,9 +648,9 @@
       "away": "Qatar",
       "homeCrest": "https://crests.football-data.org/bosnia.svg",
       "awayCrest": "https://crests.football-data.org/8030.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 1
     },
     {
       "id": "wc-018",
@@ -661,9 +661,9 @@
       "away": "Haiti",
       "homeCrest": "https://crests.football-data.org/morocco.svg",
       "awayCrest": "https://crests.football-data.org/haiti.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 4,
+      "awayScore": 2
     },
     {
       "id": "wc-017",
@@ -674,9 +674,9 @@
       "away": "Brazil",
       "homeCrest": "https://crests.football-data.org/814.svg",
       "awayCrest": "https://crests.football-data.org/764.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 3
     },
     {
       "id": "wc-005",
@@ -687,9 +687,9 @@
       "away": "Mexico",
       "homeCrest": "https://crests.football-data.org/798.svg",
       "awayCrest": "https://crests.football-data.org/769.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 3
     },
     {
       "id": "wc-006",
@@ -700,9 +700,9 @@
       "away": "South Korea",
       "homeCrest": "https://crests.football-data.org/9396.svg",
       "awayCrest": "https://crests.football-data.org/772.png",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 0
     },
     {
       "id": "wc-029",
@@ -713,9 +713,9 @@
       "away": "Germany",
       "homeCrest": "https://crests.football-data.org/791.svg",
       "awayCrest": "https://crests.football-data.org/759.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 1
     },
     {
       "id": "wc-030",
@@ -726,9 +726,9 @@
       "away": "Ivory Coast",
       "homeCrest": "https://crests.football-data.org/curacao.svg",
       "awayCrest": "https://crests.football-data.org/787.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 2
     },
     {
       "id": "wc-036",
@@ -739,9 +739,9 @@
       "away": "Netherlands",
       "homeCrest": "https://crests.football-data.org/tunisia.svg",
       "awayCrest": "https://crests.football-data.org/8601.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 3
     },
     {
       "id": "wc-035",
@@ -752,9 +752,9 @@
       "away": "Sweden",
       "homeCrest": "https://crests.football-data.org/766.svg",
       "awayCrest": "https://crests.football-data.org/792.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 1
     },
     {
       "id": "wc-023",
@@ -765,9 +765,9 @@
       "away": "United States",
       "homeCrest": "https://crests.football-data.org/803.svg",
       "awayCrest": "https://crests.football-data.org/usa.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 2
     },
     {
       "id": "wc-024",
@@ -778,9 +778,9 @@
       "away": "Australia",
       "homeCrest": "https://crests.football-data.org/761.svg",
       "awayCrest": "https://crests.football-data.org/779.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-053",
@@ -791,9 +791,9 @@
       "away": "France",
       "homeCrest": "https://crests.football-data.org/813.svg",
       "awayCrest": "https://crests.football-data.org/773.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 4
     },
     {
       "id": "wc-054",
@@ -804,9 +804,9 @@
       "away": "Iraq",
       "homeCrest": "https://crests.football-data.org/senegal.svg",
       "awayCrest": "https://crests.football-data.org/iraq.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 5,
+      "awayScore": 0
     },
     {
       "id": "wc-048",
@@ -817,9 +817,9 @@
       "away": "Spain",
       "homeCrest": "https://crests.football-data.org/758.svg",
       "awayCrest": "https://crests.football-data.org/760.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 1
     },
     {
       "id": "wc-047",
@@ -830,9 +830,9 @@
       "away": "Saudi Arabia",
       "homeCrest": "https://crests.football-data.org/cape_verde.svg",
       "awayCrest": "https://crests.football-data.org/saudi_arabia.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-042",
@@ -843,9 +843,9 @@
       "away": "Belgium",
       "homeCrest": "https://crests.football-data.org/783.svg",
       "awayCrest": "https://crests.football-data.org/805.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 5
     },
     {
       "id": "wc-041",
@@ -856,9 +856,9 @@
       "away": "Iran",
       "homeCrest": "https://crests.football-data.org/825.svg",
       "awayCrest": "https://crests.football-data.org/iran.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 1
     },
     {
       "id": "wc-071",
@@ -869,9 +869,9 @@
       "away": "England",
       "homeCrest": "https://crests.football-data.org/panama.svg",
       "awayCrest": "https://crests.football-data.org/770.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 2
     },
     {
       "id": "wc-072",
@@ -882,9 +882,9 @@
       "away": "Ghana",
       "homeCrest": "https://crests.football-data.org/799.svg",
       "awayCrest": "https://crests.football-data.org/ghana.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 2,
+      "awayScore": 1
     },
     {
       "id": "wc-065",
@@ -895,9 +895,9 @@
       "away": "Portugal",
       "homeCrest": "https://crests.football-data.org/818.svg",
       "awayCrest": "https://crests.football-data.org/765.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 0,
+      "awayScore": 0
     },
     {
       "id": "wc-066",
@@ -908,9 +908,9 @@
       "away": "Uzbekistan",
       "homeCrest": "https://crests.football-data.org/congo_dr.svg",
       "awayCrest": "https://crests.football-data.org/8070.png",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 1
     },
     {
       "id": "wc-060",
@@ -921,9 +921,9 @@
       "away": "Argentina",
       "homeCrest": "https://crests.football-data.org/8049.png",
       "awayCrest": "https://crests.football-data.org/762.png",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 1,
+      "awayScore": 3
     },
     {
       "id": "wc-059",
@@ -934,9 +934,9 @@
       "away": "Austria",
       "homeCrest": "https://crests.football-data.org/algeria.svg",
       "awayCrest": "https://crests.football-data.org/816.svg",
-      "status": "TIMED",
-      "homeScore": null,
-      "awayScore": null
+      "status": "FINISHED",
+      "homeScore": 3,
+      "awayScore": 3
     }
   ]
 }
