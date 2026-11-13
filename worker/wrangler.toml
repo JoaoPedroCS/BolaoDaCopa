@@ -1,0 +1,9 @@
+# Deploy:  cd worker && npx wrangler deploy
+# Secret (NAO vai no arquivo):  npx wrangler secret put JSONBIN_KEY
+name = "bolao-palpites"
+main = "palpites-worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+JSONBIN_BIN_ID = "6a2c15e9da38895dfeb5363d"
+ALLOWED_ORIGINS = "https://joaopedrocs.github.io"

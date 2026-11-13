@@ -55,9 +55,9 @@
 </div>
 
 <script>
-/* Mesma fonte de dados do index.html (Worker para os jogos, JsonBin para os palpites). */
+/* Mesma fonte de dados do index.html (Worker para os jogos, Worker de palpites). */
 const CONFIG = {
-  jsonbin: { enabled:true, binId:"6a2c15e9da38895dfeb5363d", accessKey:"$2a$10$sB4a4hNUpA93mz5lq7f27eSS.7mjLMuuMSMF8UcThQdIgBtuVyoSG" },
+  palpitesUrl: "https://bolao-jogos.joaohulck.workers.dev/palpites",
   matchesUrl: "https://bolao-jogos.joaohulck.workers.dev/"
 };
 
@@ -91,11 +91,10 @@ async function loadMatches(){
   return (d.matches||[]);
 }
 async function loadProfiles(){
-  if(CONFIG.jsonbin.enabled&&CONFIG.jsonbin.binId){
-    const h={}; if(CONFIG.jsonbin.accessKey) h["X-Access-Key"]=CONFIG.jsonbin.accessKey;
-    const r=await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}/latest`,{headers:h});
-    if(!r.ok) throw new Error("Falha ao carregar os palpites (JsonBin "+r.status+")");
-    return ((await r.json()).record||{}).profiles||[];
+  if(CONFIG.palpitesUrl){
+    const r=await fetch(CONFIG.palpitesUrl);
+    if(!r.ok) throw new Error("Falha ao carregar os palpites ("+r.status+")");
+    return ((await r.json())||{}).profiles||[];
   }
   const r=await fetch(`data/predictions.json?t=${Date.now()}`); if(!r.ok) throw new Error("Falha ao carregar os palpites");
   return ((await r.json()).profiles||[]);

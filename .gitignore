@@ -5,3 +5,5 @@ worker.js
 # Evita que um commit sobrescreva os palpites atuais com uma cópia velha.
 predictions.json
 data/predictions.json
+worker/combined-worker.js
+.vscode/

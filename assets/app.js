@@ -35,7 +35,9 @@ function compressImage(file, callback) {
    CONFIGURAÇÃO 
    ============================================================ */
 const CONFIG = {
-  jsonbin: { enabled:true, binId:"6a2c15e9da38895dfeb5363d", accessKey:"$2a$10$sB4a4hNUpA93mz5lq7f27eSS.7mjLMuuMSMF8UcThQdIgBtuVyoSG" },
+  // Worker que le/grava os palpites no JsonBin (a chave do JsonBin fica so no Worker).
+  // Vazio => le data/predictions.json e o "salvar" baixa um JSON. Ver worker/ e README.
+  palpitesUrl: "https://bolao-jogos.joaohulck.workers.dev/palpites",
   // TODOS os jogos (calendario + placar + ao vivo) vindos do Worker da Cloudflare.
   // Vazio => usa o matches.json local do repo. Ponha aqui a URL do worker que devolve
   // {updatedAt, source, matches:[...]} pra ele virar a unica fonte dos jogos.
@@ -250,11 +252,10 @@ async function loadMatches(){
   updateSyncInfo(d);
 }
 async function loadPredictions(){
-  if(CONFIG.jsonbin.enabled&&CONFIG.jsonbin.binId){
-    const h={}; if(CONFIG.jsonbin.accessKey) h["X-Access-Key"]=CONFIG.jsonbin.accessKey;
-    const r=await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}/latest`,{headers:h});
-    if(!r.ok) throw new Error("JsonBin "+r.status);
-    const rec=(await r.json()).record||{};
+  if(CONFIG.palpitesUrl){
+    const r=await fetch(CONFIG.palpitesUrl);
+    if(!r.ok) throw new Error("Palpites "+r.status);
+    const rec=await r.json()||{};
     PROFILES=rec.profiles||[];
     if(!CONFIG.liveUrl&&!CONFIG.matchesUrl) LIVE=normLive(rec.live);
   }else{
@@ -310,10 +311,10 @@ async function loadAll(){
 async function save(){
   const payload={updatedAt:new Date().toISOString(),profiles:PROFILES};
   if(LIVE) payload.live=LIVE;   // mantem o bloco "live" por ULTIMO no JSON
-  if(CONFIG.jsonbin.enabled&&CONFIG.jsonbin.binId){
-    const r=await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.jsonbin.binId}`,{method:"PUT",
-      headers:{"Content-Type":"application/json","X-Access-Key":CONFIG.jsonbin.accessKey,"X-Bin-Versioning":"false"},body:JSON.stringify(payload)});
-    if(!r.ok){ alert("Falha ao salvar no JsonBin ("+r.status+")."); return; }
+  if(CONFIG.palpitesUrl){
+    const r=await fetch(CONFIG.palpitesUrl,{method:"PUT",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    if(!r.ok){ alert("Falha ao salvar os palpites ("+r.status+")."); return; }
     DIRTY=false; flash("Palpites Salvos com Sucesso! ✓");
   }else{
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
